@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to Our Platform</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .academy-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .welcome-message {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .details {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .detail-row {
+            margin-bottom: 10px;
+        }
+
+        .label {
+            font-weight: bold;
+            display: inline-block;
+            width: 100px;
+        }
+
+        .closing {
+            margin-top: 20px;
+        }
+
+        .signature {
+            margin-top: 20px;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="academy-name">🎉 Welcome Aboard!</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <div class="welcome-text">
+            Hello <strong>{{userName}}</strong>,
+        </div>
+
+        <p class="message">
+            We're excited to have you join our platform! Your account has been successfully created and is ready to
+            use.
+        </p>
+
+        <!-- User Details Box -->
+        <div class="info-box">
+            <div class="info-row">
+                <span class="info-label">Name:</span>
+                <span class="info-value">{{userName}}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Registration Date:</span>
+                <span class="info-value">{{startDate}}</span>
+            </div>
+        </div>
+
+        <p class="message">
+            You can now access all features and start exploring what we have to offer. If you have any questions or
+            need assistance, our support team is here to help.
+        </p>
+
+        <!-- Optional CTA Button (uncomment if needed)
+            <div style="text-align: center;">
+                <a href="#" class="cta-button">Get Started</a>
+            </div>
+            -->
+
+        <!-- Signature -->
+        <div class="signature">
+            Best regards,<br />
+            <span class="highlight">{{senderName}}</span>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>This is an automated message. Please do not reply to this email.</p>
+        <p>&copy; 2026 Our Platform. All rights reserved.</p>
+    </div>
+    </div>
+</body>
+
+</html>

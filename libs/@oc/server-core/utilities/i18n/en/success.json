@@ -1,0 +1,8 @@
+{
+    "ADD_SUCCESS_ACTION": "{module} has been created successfully.",
+    "UPDATE_SUCCESS_ACTION": "{module} has been updated successfully.",
+    "REMOVED_SUCCESS_ACTION": "{module} removed successfully.",
+    "SUCCESS_ACTION": "{module} has been {action} successfully.",
+    "LIST_FETCH": "{module} list fetch successfully.",
+    "DETAIL_FETCH": "{module} detail has been fetched successfully."
+}
