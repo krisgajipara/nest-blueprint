@@ -11,3 +11,4 @@ export * from "./otp.entity";
 export * from "./reset-password-token.entity";
 export * from "./token.entity";
 export * from "./role.entity";
+export * from "./tenant.entity";

@@ -23,3 +23,8 @@ export const RoleEntityConstant = {
     NameMaxLength: 100,
     DescriptionMaxLength: 500
 };
+
+export const TenantEntityConstant = {
+    NameMaxLength: 100,
+    SubdomainMaxLength: 50
+};
