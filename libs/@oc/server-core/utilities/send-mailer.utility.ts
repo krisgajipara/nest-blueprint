@@ -119,7 +119,7 @@ export class SendMailerUtility {
         await this.mailerService.sendMail({
             template: "./student-onboarding",
             context: context,
-            subject: `Welcome to Sports Engine Academy`,
+            subject: `Welcome to Anvix Solution Academy`,
             to: studentData.email
         });
     }

@@ -1,4 +1,4 @@
-# Sports Engine Backend
+# Anvix Solution Backend
 
 A comprehensive, production-ready Nest.js backend application showcasing enterprise-grade architecture, modular design patterns, and advanced development practices.
 
@@ -43,7 +43,7 @@ libs/@oc/
 
 ```bash
 git clone <repository-url>
-cd sports-engine-backend
+cd nest-blueprint-backend
 ```
 
 **2. Install dependencies**
@@ -63,14 +63,14 @@ DATABASE_HOST=localhost
 DATABASE_PORT=5432
 DATABASE_USERNAME=your_username
 DATABASE_PASSWORD=your_password
-DATABASE_NAME=sports_engine
+DATABASE_NAME=nest_blueprint
 ```
 
 **4. Database Setup**
 
 ```bash
 # Create PostgreSQL database
-createdb sports_engine
+createdb nest_blueprint
 
 # Run migrations (database schema will be created automatically)
 npm run migration:run
@@ -303,8 +303,8 @@ REFRESH_TOKEN_EXPIRES_IN=7d
 
 ```bash
 # Build and run production container
-docker build -t sports-engine-backend .
-docker run -p 3031:3031 sports-engine-backend
+docker build -t nest-blueprint-backend .
+docker run -p 3031:3031 nest-blueprint-backend
 ```
 
 ---

@@ -32,7 +32,7 @@ export class SubdomainUtility {
 
     /**
      * Extract subdomain from origin or host header
-     * @param originOrHost - The origin (e.g., http://demo.sportsengine.com) or host (e.g., demo.sportsengine.com)
+     * @param originOrHost - The origin (e.g., http://demo.anvixengine.com) or host (e.g., demo.anvixengine.com)
      * @returns The subdomain string or null if not found
      */
     extractSubdomain(originOrHost: string): string | null {

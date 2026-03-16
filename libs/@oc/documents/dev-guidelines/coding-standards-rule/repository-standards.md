@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document defines the **mandatory standards** for creating and using repositories in the multi-tenant Sports Engine application. All repositories **MUST** extend `TenantAwareRepository<T>` to ensure automatic tenant filtering on every query.
+This document defines the **mandatory standards** for creating and using repositories in the multi-tenant Anvix Solution application. All repositories **MUST** extend `TenantAwareRepository<T>` to ensure automatic tenant filtering on every query.
 
 ---
 
@@ -780,4 +780,4 @@ async createUserWithProfile(userData: Partial<User>, profileData: Partial<UserPr
 
 ---
 
-**This is the definitive guide for repository implementation in the Sports Engine multi-tenant application.**
+**This is the definitive guide for repository implementation in the Anvix Solution multi-tenant application.**
