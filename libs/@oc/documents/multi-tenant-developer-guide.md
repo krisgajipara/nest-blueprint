@@ -1,6 +1,6 @@
 # Multi-Tenant Developer Guide
 
-This guide details how to develop secure, multi-tenant modules within the Sports Engine application. Our architecture follows a **"Secure by Default"** philosophy using `TenantAwareRepository`.
+This guide details how to develop secure, multi-tenant modules within the Anvix Solution application. Our architecture follows a **"Secure by Default"** philosophy using `TenantAwareRepository`.
 
 ## 1. Core Concept
 
