@@ -1,4 +1,5 @@
 import { Global, Module } from "@nestjs/common";
+import { RequestContextService } from "@core-utilities";
 import { AppCacheModule } from "./cache/app-cache.module";
 import { AppJwtModule } from "./jwt/app-jwt.module";
 import { AppMailerModule } from "./mailer/app-mailer.module";
@@ -18,8 +19,9 @@ import { AppS3Module } from "./s3/app-s3.module";
         AppJwtModule,
         AppMailerModule
     ],
-    providers: [],
+    providers: [RequestContextService],
     exports: [
+        RequestContextService,
         AppCacheModule,
         AppPermissionModule,
         AppS3Module,

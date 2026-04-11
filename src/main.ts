@@ -16,7 +16,7 @@ import { AppModule } from "./app.module";
 
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-        logger: process.env.LOG_ENABLE === "true" ? (["debug", "error", "warn", "log"] as LogLevel[]) : false
+        logger: process.env.LOG_ENABLE == "true" ? (["debug", "error", "warn", "log"] as LogLevel[]) : false
     });
     // Please remove constant security if using backend as https
     app.use(helmet({ contentSecurityPolicy: true }));
