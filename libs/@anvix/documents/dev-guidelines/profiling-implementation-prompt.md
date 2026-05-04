@@ -1,97 +1,173 @@
-# PROMPT: Implement Request-Scoped API Profiler & Cache Monitoring V2
+# API Profiler Maintenance Guide
 
-**Goal**: Build a high-performance, real-time API profiler tool for a NestJS application that captures latency (Min, Avg, P95, Max), error rates, and cache hit/miss statistics per endpoint, visualized in a premium futuristic dashboard.
+The request-scoped API profiler is already implemented. This document replaces the old implementation prompt and describes the current files, behavior, and maintenance checklist.
 
----
+Last verified against repo: 2026-05-04
 
-### Phase 1: Core Profiler Service (@core-shared-modules)
+Verified files:
+- `libs/@anvix/server-core/shared-modules/profiler/app-profiler.service.ts`
+- `libs/@anvix/server-core/shared-modules/profiler/app-profiler.module.ts`
+- `libs/@anvix/server-core/interceptors/profiler.interceptor.ts`
+- `libs/@anvix/server-core/shared-modules/cache/app-cache.service.ts`
+- `libs/@anvix/server-core/assets/profiler-dashboard.html`
+- `libs/@anvix/server-core/assets/profiler-dashboard.js`
+- `src/modules/profiler/profiling.controller.ts`
+- `src/modules/profiler/profiling.module.ts`
+- `src/main.ts`
 
-Implement a `ProfilerService` that manages the state and request-context. This should reside in `libs/@oc/server-core/shared-modules/profiler/`.
+## Purpose
 
-1. **State Management**: Use an in-memory `Map<string, ApiProfile>` to store metrics. Avoid DB persistence to ensure zero latency impact.
-2. **Request Context**:
-    - Use `node:async_hooks` `AsyncLocalStorage`.
-    - Provide methods `runWithContext<T>(fn: () => T | Promise<T>): T | Promise<T>` and `enterWithContext(): void` to wrap executions.
-3. **Metrics Calculation**:
-    - **Average**: Cumulative average.
-    - **Min/Max**: Track absolute boundaries.
-    - **P95 (95th Percentile)**: Maintain a sliding window of the last 100 latencies. Sort and pick the 95th index to capture tail latency.
-4. **Non-Blocking Logic**: Always use `setImmediate()` when updating the Map to ensure the profiler logic doesn't block the API response.
-5. **Additional Features**:
-    - Record cache hits/misses per request context.
-    - Provide summary statistics: total endpoints, total calls, cache hit/miss counts, average latency, slowest/fastest endpoints.
-    - Identify high error rate endpoints (>5% errors with >10 calls).
-    - Identify slow endpoints (average >500ms).
+The profiler captures per-endpoint runtime metrics without database persistence.
 
-### Phase 2: The Interceptor (Context Provider & Path Normalizer)
+It tracks:
 
-Implement a global `ProfilerInterceptor`.
+- total calls
+- min response time
+- average response time
+- P95 response time
+- max response time
+- error count
+- cache hits
+- cache misses
+- slow endpoints
+- high error-rate endpoints
 
-1. **Path Normalization (CRITICAL)**:
-    - Extract route path from `request.route?.path` if available (handles dynamic routes like `/users/:id`).
-    - Fallback: Sanitize URL by removing query params, replace UUID patterns with `:uuid`, replace pure numeric segments with `:id`.
-    - This prevents "Cardinality Explosion" in the Map.
-2. **Context Wrapping**:
-    - Create `store = { cacheHits: 0, cacheMisses: 0 }`.
-    - Use `profilingService.storage.run(store, () => next.handle().pipe(...))` to wrap the entire execution.
-    - Capture the `store` reference inside the interceptor closure.
-3. **Lifecycle Hooks**:
-    - Measure `startTime = Date.now()`.
-    - Use `tap` for success and `catchError` for failures.
-    - In both cases, use `setImmediate` to call `recordProfile` with the captured `store` values to ensure data integrity.
-4. **Exclusions**: Skip profiler for internal routes: `/v1`, `/v1/profiler*`, `/v1/profiler-ui*`.
+## Current File Map
 
-### Phase 3: Cache Service Instrumentation
+```text
+libs/@anvix/server-core/shared-modules/profiler/
+|-- app-profiler.module.ts                 # Profiler module provider
+`-- app-profiler.service.ts                # In-memory metrics and AsyncLocalStorage context
 
-Modify the existing `AppCacheService` within `@core-shared-modules` to report activity.
+libs/@anvix/server-core/interceptors/
+`-- profiler.interceptor.ts                # Global request timing and path normalization
 
-1. **Implicit Reporting**: In the `get(key)` method:
-    - After cache lookup, check if value exists.
-    - Call `profilingService.recordCacheHit()` or `recordCacheMiss()`.
-2. **Safety**: These calls should be "silent"—if context is missing, they log a warning but don't crash.
+libs/@anvix/server-core/shared-modules/cache/
+`-- app-cache.service.ts                   # Reports cache hit/miss to profiler context
 
-### Phase 4: API & Futuristic Dashboard
+libs/@anvix/server-core/assets/
+|-- profiler-dashboard.html                # Dashboard HTML
+`-- profiler-dashboard.js                  # Dashboard client JavaScript
 
-1. **Endpoints**:
-    - `GET /profiler`: Returns `{ summary, profiles }`.
-    - `GET /profiler/summary`: Returns summary statistics.
-    - `GET /profiler/slow`: Returns slow endpoints.
-    - `GET /profiler/errors`: Returns high error rate endpoints.
-    - `POST /profiler/clear`: Clears all profiler data.
-    - `GET /profiler-ui`: Serves standalone HTML dashboard.
-    - `GET /profiler-ui/script.js`: Serves dashboard JavaScript.
-2. **UI Design Specs**:
-    - **Theme**: Dark Mode with Glassmorphism (`backdrop-filter: blur(10px)`).
-    - **Color Palette**:
-        - Cyan (`#00f2ff`) for interactive elements.
-        - Magenta (`#ff00cc`) for P95 highlights.
-        - Success Green (`#00ffa3`) for healthy status and cache hits.
-        - Error Red (`#ff3366`) for errors and slow latency.
-        - Warning Yellow (`#fbff00`).
-    - **Layout**:
-        - Header with logo "PROFILER_V2", status badge, last updated time.
-        - Stats grid: Total Calls, Avg Latency, Slowest Trace, Cache Hit Rate.
-        - Controls: Search input, Refresh and Clear buttons.
-        - Table: Endpoint (with method badge), Calls, Min, Avg Latency (with progress bar), P95, Max, Cache (Hits/Misses), Status.
-    - **Features**:
-        - **Min/Avg/P95/Max Columns**: Show latency metrics.
-        - **Cache Column**: Display `Hits / Misses` or `N/A`.
-        - **Status Column**: Show healthy or error count.
-        - **Live Filter**: Instant search on endpoints.
-        - **Auto-Refresh**: Poll API every 5 seconds.
-        - **Parallax Effect**: Subtle background movement on mouse move.
+src/modules/profiler/
+|-- profiling.controller.ts                # Profiler API and dashboard routes
+`-- profiling.module.ts                    # Profiler Nest module
+```
 
-### Phase 5: Implementation Checklist
+## Runtime Wiring
 
-- [] Install/Verify `node:async_hooks` availability.
-- [] Create `ProfilerService` in `libs/@oc/server-core/shared-modules/profiler/`.
-- [] Export `ProfilerService` via `@core-shared-modules`.
-- [] Create `ProfilerInterceptor` with path normalization regex.
-- [] Instrument `AppCacheService`.
-- [] Add `ProfilerController` with multiple endpoints.
-- [] Implement HTML/JS dashboard with specified CSS and features.
-- [] Verify exclusions and non-blocking updates.
+`src/main.ts` registers the profiler globally:
 
----
+```typescript
+const profilingService = app.get(ProfilerService);
+app.useGlobalInterceptors(new ReqResInterceptor(), new ProfilerInterceptor(profilingService));
+```
 
-This V2 prompt reflects the actual implemented features, including additional API endpoints, enhanced service methods, and detailed UI specifications.</content>
+This means every HTTP request can be profiled unless the interceptor excludes it.
+
+## ProfilerService
+
+`ProfilerService` stores profiles in an in-memory `Map<string, ApiProfile>`.
+
+Important behavior:
+
+- Uses `AsyncLocalStorage<ProfilerContext>` to track cache hits/misses for the current request.
+- Keeps a sliding window of recent latencies for P95 calculation.
+- Exposes summary, slow endpoint, high error-rate, and clear operations.
+- Does not persist metrics to the database.
+
+Main methods:
+
+```text
+runWithContext()
+enterWithContext()
+recordCacheHit()
+recordCacheMiss()
+recordProfile()
+getAllProfiles()
+getProfile()
+getSummary()
+getHighErrorRateEndpoints()
+getSlowEndpoints()
+clearAllProfiles()
+getContext()
+```
+
+## ProfilerInterceptor
+
+`ProfilerInterceptor`:
+
+- records request start time
+- normalizes endpoint paths
+- creates a profiler context for cache hit/miss counting
+- records successful requests through `tap`
+- records failed requests through `catchError`
+- uses `setImmediate()` before updating profile metrics
+
+Path normalization:
+
+- uses `request.route?.path` when available
+- strips query params
+- replaces UUID segments with `:uuid`
+- replaces numeric segments with `:id`
+
+Excluded routes:
+
+```text
+/v1
+/v1/profiler*
+/v1/profiler-ui*
+```
+
+## Cache Instrumentation
+
+`AppCacheService.get()` reports cache activity:
+
+- cache value exists: `recordCacheHit()`
+- cache value missing: `recordCacheMiss()`
+
+If no profiler context exists, `ProfilerService` logs a warning and continues.
+
+## Profiler API
+
+Current controller routes:
+
+```text
+GET  /profiler                 # { summary, profiles }
+GET  /profiler/summary         # summary only
+GET  /profiler/slow            # endpoints with average latency > 500ms
+GET  /profiler/errors          # endpoints with error rate > 5% and more than 10 calls
+POST /profiler/clear           # clear in-memory profiles
+GET  /profiler-ui              # dashboard HTML
+GET  /profiler-ui/script.js    # dashboard JS
+```
+
+Depending on global prefix configuration, these may be served under `/v1/...`.
+
+## Dashboard Assets
+
+Dashboard assets are served from:
+
+```text
+libs/@anvix/server-core/assets/profiler-dashboard.html
+libs/@anvix/server-core/assets/profiler-dashboard.js
+```
+
+The controller first attempts to load assets from the compiled path and falls back to `process.cwd()` during development.
+
+## Maintenance Checklist
+
+- [ ] Keep profiler routes excluded from profiling to avoid recursive dashboard/API noise.
+- [ ] Preserve path normalization to avoid high-cardinality metric keys.
+- [ ] Keep profiler storage in memory unless there is an explicit product requirement for persistence.
+- [ ] Avoid blocking request completion while updating metrics.
+- [ ] Keep cache hit/miss recording best-effort; cache metrics should never break requests.
+- [ ] Update this guide if profiler endpoint paths change.
+- [ ] Update dashboard assets and this guide together when UI behavior changes.
+
+## Known Follow-Up Opportunities
+
+- The interceptor currently accesses `ProfilerService.storage` through `(this.profilingService as any).storage`. Prefer exposing a public method on `ProfilerService` for running with a provided context.
+- `ProfilerService` logs warnings when cache hit/miss is recorded without context. If logs become noisy, downgrade this to debug-level or make it configurable.
+- Dashboard file loading uses `require("fs")` and `require("path")` inside controller methods. This works, but can be refactored to top-level imports for consistency.
+

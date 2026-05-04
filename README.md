@@ -188,23 +188,80 @@ curl -X POST http://localhost:3031/v1/auth/login \
 ## Project Structure
 
 ```
-src/
-├── modules/              # Feature modules
-│   ├── auth/            # Authentication module
-│   └── user/            # User management module
-├── app.module.ts        # Root application module
-└── main.ts              # Application entry point
-
-libs/@anvix/
-├── server-core/         # Shared infrastructure
-│   ├── config/          # Configuration files
-│   ├── database/        # Database entities & migrations
-│   ├── utilities/       # Shared utilities (JWT, Email, etc.)
-│   ├── custom-*         # Decorators, Guards, Validators
-│   └── filters/         # Exception filters
-└── business-core/       # Business logic modules
-    ├── modules/         # Feature modules (Auth, User)
-    └── dto/             # Data Transfer Objects
+backend/
+|-- config/                                  # Application configuration consumed during bootstrap
+|   |-- env/                                 # Environment specific values consumed by ConfigModule
+|   |   `-- development.env                  # Local development environment variables
+|   |-- configuration.ts                     # Central configuration factory consumed by app startup
+|   `-- validation.ts                        # Environment validation schema consumed before boot
+|-- docs/                                    # Product, portal, and API flow documentation consumed by developers
+|   |-- draft/                               # Draft documentation consumed during planning
+|   |-- portals/                             # Portal wise requirements consumed by frontend/backend teams
+|   |   |-- customer/                        # Customer portal flows and page requirements
+|   |   |-- product-owner/                   # Product owner portal operations and monitoring docs
+|   |   |-- salon-admin/                     # Salon admin management and booking operation docs
+|   |   `-- staff-view/                      # Staff daily agenda and communication docs
+|   |-- auth-api-flow-diagram.md             # Auth endpoint flow documentation
+|   |-- role-api-flow-diagram.md             # Role endpoint flow documentation
+|   `-- user-api-flow-diagram.md             # User endpoint flow documentation
+|-- libs/                                    # Shared packages consumed by src and feature modules
+|   `-- @anvix/
+|       |-- business-core/                   # Business/domain layer consumed by API controllers
+|       |   |-- dto/                         # Shared request/response DTOs consumed across modules
+|       |   |   `-- common-dto/              # Common pagination, dropdown, cache, file, and error DTOs
+|       |   `-- modules/                     # Domain modules consumed by src/modules controllers
+|       |       |-- auth/                    # Auth business logic, token repositories, and auth DTOs
+|       |       |-- role/                    # Role and permission business logic, repositories, and DTOs
+|       |       |-- tenant/                  # Tenant business logic, repositories, config DTO, and tenant DTOs
+|       |       `-- user/                    # User business logic, repositories, and user DTOs
+|       |-- documents/                       # Architecture and development guides consumed by contributors
+|       |   `-- dev-guidelines/              # Coding standards, setup guides, and validation rules
+|       `-- server-core/                     # Infrastructure layer consumed by business-core and app bootstrap
+|           |-- assets/                      # Static profiler dashboard files served by profiler features
+|           |-- config/                      # TypeORM, Swagger, and mail configuration consumed by bootstrap/shared modules
+|           |-- constants/                   # Cache, entity, permission, tenant, and success constants
+|           |-- context/                     # Async context storage consumed by middleware/services
+|           |-- custom-decorators/           # Reusable Nest decorators consumed by controllers and DTOs
+|           |-- custom-guards/               # Auth and role guards consumed by protected routes
+|           |-- custom-validators/           # Validation decorators consumed by request DTOs
+|           |-- database/                    # Persistence layer consumed by repositories and migrations
+|           |   |-- base-entities/           # Base entity classes consumed by TypeORM entities
+|           |   |-- entities/                # Database entity definitions consumed by TypeORM
+|           |   |-- migrations/              # Schema changes and seeders consumed by migration scripts
+|           |   |-- repositories/            # Shared repository base classes consumed by domain repositories
+|           |   |-- subscribers/             # Audit and tenant subscribers consumed by TypeORM events
+|           |   `-- data-source.ts           # TypeORM CLI data source configuration
+|           |-- email-templates/             # Handlebars email templates consumed by mail service
+|           |-- enums/                       # Shared enum definitions consumed by entities, DTOs, and services
+|           |-- filters/                     # Global exception filters consumed by Nest bootstrap
+|           |-- generic-service/             # Cross-cutting context/audit services consumed by middleware and repositories
+|           |-- interceptors/                # Request/response and profiler interceptors consumed by Nest pipeline
+|           |-- interfaces/                  # Shared TypeScript interfaces consumed across packages
+|           |-- middleware/                  # Tenant, language, audit, Swagger, and async context middleware
+|           |-- shared-modules/              # Reusable cache, context, JWT, mailer, permission, profiler, and S3 services
+|           `-- utilities/                   # Logging, cache, OTP, translation, file filter, AWS secret, and exception helpers
+|-- requirements/                            # Business requirement documents consumed during product planning
+|-- scripts/                                 # Automation scripts consumed by developers and CI
+|   `-- genai-code-review.js                 # AI-assisted code review script
+|-- src/                                     # Nest application entry layer consumed by the runtime
+|   |-- modules/                             # API presentation modules that consume business-core services
+|   |   |-- auth/                            # Auth HTTP controller
+|   |   |-- profiler/                        # Profiling dashboard/controller endpoints
+|   |   |-- role/                            # Role HTTP controller
+|   |   |-- tenant/                          # Tenant HTTP controller
+|   |   `-- user/                            # User HTTP controller
+|   |-- app-cluster.service.ts               # Optional clustering service consumed by application startup
+|   |-- app.controller.ts                    # Root health/basic API controller
+|   `-- main.ts                              # Nest bootstrap file
+|-- docker-compose.yml                       # Local service orchestration consumed by Docker Compose
+|-- Dockerfile                               # Container build recipe consumed by Docker
+|-- eslint.config.js                         # ESLint configuration consumed by lint scripts
+|-- example.env                              # Environment template consumed when creating .env
+|-- nest-cli.json                            # Nest CLI project configuration
+|-- package.json                             # npm scripts and dependency manifest
+|-- package-lock.json                        # Locked npm dependency graph
+|-- tsconfig.build.json                      # TypeScript build configuration
+`-- tsconfig.json                            # Base TypeScript configuration
 ```
 
 ### Architecture Layers

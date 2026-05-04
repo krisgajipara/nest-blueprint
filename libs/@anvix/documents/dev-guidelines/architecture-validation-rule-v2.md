@@ -1,206 +1,212 @@
-# Architecture Codebase Validation Rules (Minimized Checklist)
+# Architecture Validation Rules
 
-This document provides a strict, high-density validation checklist for code reviews. Use this to programmatically or manually detect architectural violations.
+This is the canonical validation checklist for backend code review and AI-generated code.
 
-## 1. Module Boundaries & Circular Dependencies
-- [ ] **Strictly Service-to-Service:** Verify that **only** Services are injected across module boundaries.
-  - **Violation Identity:** Constructor imports `Repository` classes from other modules (e.g., `import { UserRepository }` inside `AuthService`).
-  - **Violation Identity:** Constructor uses `@InjectRepository()` for an entity belonging to another module.
-- [ ] **No Circular Dependencies:**
-  - **Violation Identity:** Usage of `forwardRef()`. STRICTLY PROHIBITED. Use an Orchestrator Service or Facade Module instead.
-  - **Anti-Circular Pattern:** If Module A needs B and B needs A, create a third "Orchestrator Service" or "Facade Module".
-- [ ] **Unidirectional Flow:**
-  - **Violation Identity:** Repository calling a Service.
-  - **Violation Identity:** Entity calling a Service or Repository.
-  - **Rule:** Controller -> Service -> Repository. Never Upwards.
-- [ ] **Encapsulation:**
-  - **Violation Identity:** `module.ts` `exports` array containing a Repository class. Only Services should be exported.
-  - **Rule:** Each module owns its repositories — no direct sharing across components.
-- [ ] **Imports:**
-  - **Violation Identity:** Imports starting with `../../` or absolute paths. Must use tsConfig aliases (e.g., `@business-core-modules/...`).
+Last verified against repo: 2026-05-04
 
-## 2. DTO Standards
-- [ ] **Validation Decorators:**
-  - **Violation Identity:** Usage of `class-validator` decorators (`@IsString`, `@IsInt`, `@IsUUID`, `@IsOptional`).
-  - **Requirement:** Must use `@ValidateType()` with `FieldTypeEnum` and custom validators from `@core-custom-validators`.
-- [ ] **Explicit Mapping:**
-  - **Violation Identity:** usage of `Object.assign(this, data)` or `this = { ...data }` in constructors.
-  - **Requirement:** Every property must be explicitly assigned line-by-line (e.g., `this.firstName = entity.firstName;`).
-- [ ] **Strong Typing:**
-  - **Violation Identity:** Constructor parameter typed as `any`.
-  - **Requirement:** Input types must be concrete Entities or DTOs (e.g., `constructor(court: Court)` NOT `any`).
-- [ ] **Response Structure:**
-  - **Violation Identity:** Returning object literals `return { id: 1 }` typed as a DTO.
-  - **Requirement:** Must explicitly instantiate the DTO using constructor (e.g., `new UserResponseDto(user)`).
-  - **Requirement:** Response DTOs NOT used as types.
-- [ ] **Nested Objects:**
-  - **Requirement:** Complex nested objects must use their own private DTO class definition within the same file.
-- [ ] **Mapping Logic:**
-  - **CRITICAL:** All mapping logic performed in DTO constructors only, NOT in service layers.
+Use this document with `coding-standards-v2.md`. Older duplicate validation files under `dev-guidelines/coding-standards-rule/` have been removed after their useful content was merged here.
 
-## 3. Entity & Database
-- [ ] **Multi-Tenancy:**
-  - **Requirement:** Business entities extend `BaseModifiableEntity` (adds `tenant_id`). System entities extend `BaseSystemModifiableEntity`.
-- [ ] **Primary Keys:**
-  - **Requirement:** Must use UUIDs (`@PrimaryGeneratedColumn('uuid')`).
-- [ ] **Field Constants:**
-  - **Violation Identity:** Hardcoded integers for length (e.g., `length: 255`).
-  - **Requirement:** Use constants from `@core-constants` (e.g., `TableFieldLength.NAME`).
-- [ ] **Relationships:**
-  - **Requirement:** Explicit `@JoinColumn({ name: '...', referencedColumnName: '...' })` on `@ManyToOne`/`@OneToOne`.
-  - **Check:** Ensure `cascade: true` is enabled if parent manages child lifecycle.
-- [ ] **Constraints:**
-  - **Violation Identity:** Hardcoded constraint name strings.
-  - **Requirement:** Use `@Unique(DatabaseUniqueKey.ENUM_VALUE, ['fields'])` and `DatabaseUniqueKey` enum.
+## 1. Module Boundaries
 
-## 4. Repository & Multi-Tenancy Patterns
-- [ ] **Inheritance:**
-  - **Requirement:** Repositories for tenant entities **MUST** extend `TenantAwareRepository<T>`.
-  - **Violation Identity:** `extends Repository<T>` is prohibited for business data.
-- [ ] **Scope:**
-  - **Requirement:** Must be `@Injectable({ scope: Scope.REQUEST })` and inject `RequestContextService`.
-- [ ] **Facade Pattern (AuthRepository Rule):**
-  - **Check:** Modules with 3+ entities must use a Facade Repository.
-  - **CRITICAL:** Facade repositories MUST be `@Injectable({ scope: Scope.REQUEST })`.
-  - **CRITICAL:** Facade repositories MUST inject dedicated `TenantAwareRepository` instances only.
-  - **CRITICAL:** Monolithic repositories >500 lines MUST be split using facade pattern.
-  - **CRITICAL:** Cross-entity operations MUST use facade repositories.
-- [ ] **Data Access:**
-  - **Violation Identity:** Manually adding `.where('tenant_id = :id')` (Base class handles this).
-  - **Violation Identity:** Usage of `.query()` (Raw SQL) without binding `tenant_id` manually.
-  - **CRITICAL:** Database Views MUST include `tenant_id` column.
-- [ ] **Optimization:**
-  - **Requirement:** Repositories should default to matching specific `select: []` fields, avoiding `SELECT *`.
-  - **CRITICAL:** Defined ENUMs used for ordering (e.g., `OrderDirection.DESC`).
+- [ ] Controllers live in `src/modules/{module}`.
+- [ ] Business services and repositories live in `libs/@anvix/business-core/modules/{module}`.
+- [ ] Entities live in `libs/@anvix/server-core/database/entities`.
+- [ ] Cross-module access happens through services, not repositories.
+- [ ] Repositories are not exported from feature modules unless there is a deliberate framework-level reason.
+- [ ] Repositories do not call services.
+- [ ] Entities do not call services or repositories.
+- [ ] Dependency direction remains:
 
-## 5. Service & Controller Layer (CRITICAL)
-- [ ] **Controller Logic:**
-  - **Violation Identity:** Controllers containing `if/else`, loops, or data transformation.
-  - **Violation Identity:** Controllers instantiating classes (`new Dto()`).
-- [ ] **Swagger:**
-  - **Requirement:** `@ApiResponseStatus` must include the Response DTO class as the **4th parameter**.
-  - **Violation Identity:** Usage of `@ApiQuery` decorators when query DTO is already decorated with `@ApiProperty` or `@ApiPropertyOptional`.
-  - **Requirement:** Rely on DTO decorations for automatic Swagger documentation. Only use `@ApiQuery` for complex cases not covered by DTOs.
-- [ ] **Security:**
-  - **Requirement:** Protected routes must have `@RequirePermissions`, `@UseGuards`, `@ApiBearerAuth`.
-  - **CRITICAL:** New modules added to `MODULE_CONSTANTS` and `DEFAULT_PERMISSIONS`.
-- [ ] **Service AppResponse:**
-  - **Violation Identity:** `return { data: ... }` or missing third parameter object.
-  - **Requirement:** `new AppResponse(SuccessConstant.ENUM, data, { module: ... })`.
-  - **CRITICAL:** Success messages MUST use `SuccessConstant` enum values, NEVER string literals.
-- [ ] **Type Safety:**
-  - **Violation Identity:** Return type `Promise<AppResponse<any>>`.
-  - **Requirement:** Return type must be `Promise<AppResponse<YourResponseDto>>`.
-- [ ] **Internal Data Fetching:**
-  - **CRITICAL:** Services SHOULD provide internal methods (e.g., `findOneById`) returning raw entities for other services, while public controller methods use `AppResponse`.
-- [ ] **DB Isolation:**
-  - **Violation Identity:** Service injecting `DataSource`, `EntityManager`, or `QueryRunner`.
-  - **Violation Identity:** Service using `repo.createQueryBuilder`.
-  - **Requirement:** Service calls semantic Repository methods only (e.g., `repo.findActiveUsers()`).
+```text
+Controller -> Service -> Repository -> Entity
+```
 
-## 6. Error Handling
-- [ ] **Standard Keys:**
-  - **Violation Identity:** Hardcoded error strings `'User not found'`.
-  - **Requirement:** Use `error.json` keys (e.g., `ERR_MODULE_NOT_FOUND`) and `MapToModuleName`.
-- [ ] **Module Naming Standards:**
-  - **CRITICAL:** All module name references MUST use `ModuleName` enum values.
-  - **CRITICAL:** NEVER use hardcoded module name strings (e.g., "User").
-  - **CRITICAL:** Always use `MapToModuleName(ModuleName.ENUM_VALUE)`.
-- [ ] **Patterns:**
-  - **Pattern:** `throw new NotFoundException({ message: 'ERR_MODULE_NOT_FOUND', module: MapToModuleName(ModuleName.USER) })`.
-  - **Requirement:** Use specific NestJS Exceptions (`NotFoundException`, `ConflictException`).
-  - **Requirement:** 400 Bad Request errors must include `field`, `message`, and metadata.
+## 2. Circular Dependencies
 
-## 7. Code Quality Validation
-- [ ] **Import & Path Aliases:**
-  - **CRITICAL:** tsConfig path aliases used for ALL imports.
-  - **CRITICAL:** NO relative imports (e.g., `../../../module/file`).
-  - **CRITICAL:** NO hardcoded absolute paths (e.g., `libs/@oc/...`).
-  - **Requirement:** Proper re-exports from `index.ts` files.
-- [ ] **TypeScript & NestJS Standards:**
-  - **Requirement:** `async/await` for all async operations.
-  - **Requirement:** Proper TypeScript types (no `any`).
-  - **Requirement:** Logger integration with `GenerateLogPrefix`.
-  - **Requirement:** Comments for methods/classes explaining logic.
-- [ ] **API Standards:**
-  - **Requirement:** RESTful naming (plural nouns).
-  - **Requirement:** Correct HTTP methods (GET, POST, PUT, DELETE).
-  - **Requirement:** Standard status codes (200, 201, 204, 400, 403, 404).
-  - **Requirement:** API versioning where needed.
+- [ ] No `forwardRef()` is introduced without a documented reason.
+- [ ] Repositories do not depend on each other cyclically.
+- [ ] Services do not depend on each other cyclically.
+- [ ] If module A and module B need each other, shared behavior is extracted into a third service/module.
+- [ ] New code avoids circular import chains.
 
-## 8. Business Logic Validation
-- [ ] **List Endpoints:**
-  - **Requirement:** Search functionality implemented.
-  - **Requirement:** Filtering capabilities.
-  - **Requirement:** Pagination support.
-  - **Requirement:** Sorting with `SORT_MAP: Record<string, string>` (no switch/if-else).
-  - **Requirement:** `CommonSearchResponseDto` usage.
-- [ ] **Data Integrity:**
-  - **Requirement:** Soft-delete implementation.
-  - **Requirement:** Transaction usage for multi-step operations.
-  - **Requirement:** Proper error handling with standard keys.
-  - **Requirement:** Data validation rules.
+## 3. DTO Validation
 
-## 9. File Update Procedures (Violation Handling)
+- [ ] Request DTOs exist for request bodies and query params.
+- [ ] Response DTOs exist for API responses.
+- [ ] DTOs are separated into `request` and `response` folders.
+- [ ] Custom validators from `@core-custom-validators` are used where available.
+- [ ] `ValidateType()` with `FieldTypeEnum` is used for type validation where applicable.
+- [ ] DTOs do not rely on raw inline object types for complex nested response structures.
+- [ ] Response DTO constructors explicitly map fields.
+- [ ] Response DTO constructors do not use `Object.assign(this, data)`.
+- [ ] DTO constructor parameters are strongly typed where practical.
+- [ ] Services do not return raw entities directly to controllers.
 
-### **Critical Violations (Must Fix)**
-- [ ] `class-validator` usage → Replace with custom validators
-- [ ] `class-validator` type decorators → Use `ValidateType()` with `FieldTypeEnum`
-- [ ] Inline object types in DTOs → Create private DTO classes
-- [ ] Hardcoded strings instead of ENUMs → Use defined enums
-- [ ] All fields returned from repository → Implement selective returns
-- [ ] Non-standard error messages → Use `error.json` keys
-- [ ] Business logic in constructors → Move to direct property mapping
-- [ ] Response DTOs used as types → Always instantiate with constructor
-- [ ] Mapping logic in service layer → Move all mapping to DTO constructors
-- [ ] Hardcoded constraint names → Use `DatabaseUniqueKey` enum values
-- [ ] Non-standard `@Unique` format → Use `@Unique(DatabaseUniqueKey.EnumValue, ["field1", "field2"])`
-- [ ] Non-standard `@JoinColumn` usage → Must specify `name` and `referencedColumnName`
-- [ ] Missing response DTO in `ApiResponseStatus` → Always pass response DTO as 4th parameter
-- [ ] Redundant `@ApiQuery` decorators → Remove when DTOs provide sufficient documentation
-- [ ] Relative or hardcoded import paths → Use ONLY tsConfig path aliases
-- [ ] Hardcoded module name strings → Use `MapToModuleName(ModuleName.ENUM_VALUE)`
-- [ ] Missing permissions setup → Add module to `MODULE_CONSTANTS` and `DEFAULT_PERMISSIONS`
-- [ ] Missing security decorators → Use `@RequirePermissions`, `@UseGuards`, `@ApiBearerAuth`
-- [ ] DTO constructors using `any` → Use strongly typed parameters
-- [ ] DTO constructors using `Object.assign` → Map each field explicitly
-- [ ] String literals for success messages → Use `SuccessConstant` enum values
-- [ ] Entity missing tenant context → Extend `BaseModifiableEntity` (not `BaseSystemModifiableEntity`)
-- [ ] Repository bypassing tenant filters → Extend `TenantAwareRepository`
-- [ ] Repository missing request context → Add `@Injectable({ scope: Scope.REQUEST })`
-- [ ] Non-facade repository pattern → Use Facade pattern for 3+ entities
-- [ ] Manual tenant filtering in facades → Remove, rely on `TenantAwareRepository`
-- [ ] Services injecting repos from other modules → Inject Services only
-- [ ] Direct repo imports from other modules → Import Services only
-- [ ] Usage of `forwardRef()` → Strictly prohibited, use Facade/Orchestrator
-- [ ] Circular Module Dependencies → Refactor with Orchestrator service
-- [ ] Sorting using switch/if-else → Use SORT_MAP pattern
+## 4. Swagger Validation
 
-### **Medium Violations (Should Fix)**
-- [ ] Missing Swagger documentation
-- [ ] Missing error handling
-- [ ] Incomplete constant usage
+- [ ] Controllers use `@ApiTags`.
+- [ ] Endpoints use `@ApiOperation` where useful.
+- [ ] Protected endpoints use `@ApiBearerAuth()`.
+- [ ] Endpoints use `ApiResponseStatus`.
+- [ ] Response DTO class is passed to `ApiResponseStatus` when endpoint returns data.
+- [ ] List endpoints use `CommonSearchResponseDto` where applicable.
+- [ ] DTO properties have meaningful `@ApiProperty()` descriptions.
+- [ ] DTO/object properties use `type` instead of oversized inline examples.
 
-### **Low Violations (Nice to Have)**
-- [ ] Code comments improvement
-- [ ] Performance optimizations
-- [ ] Documentation updates
+## 5. Entity And Database Validation
 
-## 10. Validation Report Template
+- [ ] Primary keys use UUIDs unless a custom key is required.
+- [ ] Tenant-owned entities extend `BaseTenantModifiableEntity` or `BaseTenantModifiableEntityWithoutIdentity`.
+- [ ] System-wide entities extend `BaseSystemModifiableEntity` or another non-tenant base entity.
+- [ ] String column lengths use constants from `@core-constants` where a constant exists.
+- [ ] Unique constraint names use shared constants such as `DatabaseUniqueKey`.
+- [ ] Relationship join columns are explicit where needed.
+- [ ] Soft-delete behavior is used for removable records.
+- [ ] Migrations are added for schema changes.
+- [ ] Seed data changes are added under `migrations/seeders`.
+
+## 6. Repository Validation
+
+- [ ] Tenant-owned repositories extend `TenantAwareRepository<T>`.
+- [ ] Tenant-owned repositories use `@Injectable({ scope: Scope.REQUEST })`.
+- [ ] Tenant-owned repositories inject `RequestContextService` from `@core-shared-modules`.
+- [ ] Services do not inject TypeORM `Repository<T>` directly for tenant-owned entities.
+- [ ] Repositories select only the fields needed by the use case.
+- [ ] Repository methods expose semantic operations, such as `findActiveUsers()`.
+- [ ] Raw SQL manually filters by `tenant_id`.
+- [ ] Database views include `tenant_id` where tenant filtering is required.
+- [ ] `createQueryBuilderUnfiltered()` is used only for intentional system-level queries.
+- [ ] Sorting uses a whitelist map such as `SORT_MAP`, not raw client-provided column names.
+
+## 7. Service Validation
+
+- [ ] Services contain business logic.
+- [ ] Services orchestrate repositories and shared services.
+- [ ] Services do not perform HTTP/controller concerns.
+- [ ] Services use typed return values.
+- [ ] Public API service methods follow the module's `AppResponse` pattern.
+- [ ] Internal service methods can return raw entities for other services when needed.
+- [ ] Multi-step writes use transactions where data consistency requires it.
+- [ ] Success messages use `SuccessConstant` where applicable.
+- [ ] Error messages use standard error keys.
+
+## 8. Controller Validation
+
+- [ ] Controllers do not contain business rules.
+- [ ] Controllers do not build database queries.
+- [ ] Controllers do not perform complex data mapping.
+- [ ] Controllers use dedicated DTOs for body/query input.
+- [ ] UUID route params use `ParseUUIDPipe`.
+- [ ] Protected routes use the correct guard.
+- [ ] Permission-protected routes use `@RequirePermissions()`.
+- [ ] Protected routes use `@ApiBearerAuth()`.
+- [ ] REST endpoints use resource nouns and appropriate HTTP methods.
+
+## 9. Permissions And Security
+
+- [ ] New protected modules are added to `MODULE_CONSTANTS`.
+- [ ] Default permissions are added to `DEFAULT_PERMISSIONS` when needed.
+- [ ] Controllers use permission constants instead of hardcoded permission strings.
+- [ ] Guards match the controller's security needs.
+- [ ] Product-owner/super-admin bypass behavior is verified before relying on it.
+- [ ] Tenant-owned routes require tenant context when appropriate.
+
+## 10. Multi-Tenancy Validation
+
+- [ ] `AsyncContextMiddleware` runs before `TenantContextMiddleware`.
+- [ ] Tenant-owned routes receive `x-tenant` or `x-tenant-id` where required.
+- [ ] Tenant-aware repositories are used for tenant-owned data.
+- [ ] Raw SQL includes explicit tenant filtering.
+- [ ] System-wide operations are clearly documented if they bypass tenant filters.
+- [ ] Tenant mismatch behavior is tested for protected routes.
+- [ ] See `libs/@anvix/documents/TENANT_GUIDE.md` for detailed rules.
+
+## 11. Environment Variables
+
+- [ ] New environment variables are added to `config/configuration.ts`.
+- [ ] New environment variables are validated in `config/validation.ts`.
+- [ ] New environment variables are documented in `example.env`.
+- [ ] Application code uses `ConfigService` instead of direct `process.env` access.
+- [ ] Direct `process.env` access is limited to configuration loading code.
+
+## 12. Import And Alias Validation
+
+- [ ] Cross-package imports use aliases from `tsconfig.json`.
+- [ ] Hardcoded absolute source paths are not used in TypeScript imports.
+- [ ] Long relative paths across package boundaries are avoided.
+- [ ] Relative imports are acceptable for nearby implementation files that are not exported by alias barrels.
+- [ ] New DTOs/services/repositories are exported through the expected `index.ts` files.
+
+## 13. List Endpoint Validation
+
+- [ ] List endpoints support pagination.
+- [ ] Search/filter/sort are implemented where needed.
+- [ ] Sort fields are whitelisted.
+- [ ] Repository returns `[items, total]` when using pagination.
+- [ ] Service maps results into response DTOs.
+- [ ] Response uses `CommonSearchResponseDto`.
+
+## 14. Critical Violations
+
+Fix these before approving a change:
+
+- [ ] Business logic in controllers.
+- [ ] Raw entities returned directly from controllers.
+- [ ] Missing DTOs for request/response.
+- [ ] Direct TypeORM repository injection in services for tenant-owned data.
+- [ ] Tenant-owned repository does not extend `TenantAwareRepository`.
+- [ ] Tenant-owned entity does not use a tenant-aware base entity.
+- [ ] Raw SQL without tenant filtering.
+- [ ] Missing migration for schema change.
+- [ ] Hardcoded user-facing error strings.
+- [ ] Missing permission constants for new protected module.
+- [ ] Missing guards on protected routes.
+- [ ] UUID params without `ParseUUIDPipe`.
+- [ ] Circular dependency introduced.
+- [ ] Duplicate standards or architecture docs created instead of updating canonical docs.
+
+## 15. Medium Violations
+
+Fix these when practical before merging:
+
+- [ ] Missing Swagger descriptions.
+- [ ] Missing method/class comments for non-obvious behavior.
+- [ ] Repository returns more fields than needed.
+- [ ] Incomplete constant usage.
+- [ ] Missing documentation update for changed architecture.
+- [ ] Missing tests for high-risk behavior.
+
+## 16. Validation Report Template
 
 ```markdown
 # Code Validation Report
 
 ## Summary
-- **Total Files Reviewed:** X
-- **Critical Issues:** X
-- **Medium Issues:** X
-- **Status:** ✅ APPROVED / ❌ REJECTED
 
-## Critical Issues Found
-1. **File:** `path/to/file.ts`
-   - **Line:** X
-   - **Issue:** Description
-   - **Rule Violated:** Coding Standard X
-   - **Required Fix:** Specific action needed
+- Total files reviewed:
+- Critical issues:
+- Medium issues:
+- Status: APPROVED / REJECTED
+
+## Critical Issues
+
+1. File: `path/to/file.ts`
+   Line:
+   Issue:
+   Rule violated:
+   Required fix:
+
+## Medium Issues
+
+1. File: `path/to/file.ts`
+   Line:
+   Issue:
+   Suggested fix:
+
+## Notes
+
+- Residual risk:
+- Tests run:
+- Tests not run:
 ```
+

@@ -1,307 +1,300 @@
-# Multi-Tenant Architecture - Simplified Guide
+# Multi-Tenant Architecture Guide
+
+This guide explains the current multi-tenant architecture used by the backend.
+
+Last verified against repo: 2026-05-04
+
+Verified files:
+- `src/app.module.ts`
+- `libs/@anvix/server-core/middleware/async-context.middleware.ts`
+- `libs/@anvix/server-core/middleware/tenant-context.middleware.ts`
+- `libs/@anvix/server-core/generic-service/async-context.service.ts`
+- `libs/@anvix/server-core/shared-modules/context/app-context.service.ts`
+- `libs/@anvix/server-core/database/repositories/tenant-aware.repository.ts`
+- `libs/@anvix/server-core/database/subscribers/tenant.subscriber.ts`
+- `libs/@anvix/server-core/custom-guards/role.guard.ts`
+- `libs/@anvix/server-core/custom-guards/auth-role.guard.ts`
 
 ## Overview
 
-This NestJS application implements multi-tenancy with **complete data isolation** between tenants. The system supports a **PRODUCT_OWNER (SUPER_ADMIN)** role that can bypass tenant scoping for cross-tenant operations.
+The application isolates tenant-owned data through:
 
----
+- request context stored in `AsyncLocalStorage`
+- tenant header validation middleware
+- tenant-aware base entities
+- tenant-aware repositories
+- a TypeORM subscriber that injects and validates `tenantId`
+- authorization guards that validate JWTs and permissions
 
-## How It Works (Simple)
+## Request Flow
 
-```
-Request → TenantContextMiddleware → AuthRoleGuard → TenantSubscriber → Database
-           (extracts tenant        (validates JWT   (auto-injects     (filtered by
-            from header)            + tenant match)  tenantId)         tenantId)
-```
-
-### 3 Key Components
-
-1. **TenantSubscriber** - Auto-injects `tenantId` on insert/update
-2. **TenantAwareRepository** - Auto-filters queries by `tenantId`
-3. **AuthRoleGuard** - Validates tenant matches JWT token
-
----
-
-## File Locations
-
-```
-libs/@oc/server-core/
-├── database/
-│   ├── base-entities/
-│   │   ├── base-modifiable-entity.ts       # Adds tenantId + audit fields
-│   │   └── base-modifiable-without-identity-entity.ts  # Adds tenantId + audit (no PK)
-│   ├── entities/
-│   │   └── tenant.entity.ts    # Tenant entity (no tenantId)
-│   ├── repositories/
-│   │   └── tenant-aware.repository.ts
-│   └── subscribers/
-│       └── tenant.subscriber.ts
-├── generic-service/
-│   └── tenant-context.service.ts  # Request-scoped tenant context
-├── middleware/
-│   └── tenant-context.middleware.ts
-├── custom-decorators/
-│   └── require-permissions.decorator.ts
-└── custom-guards/
-    ├── tenant.guard.ts
-    └── auth-role.guard.ts      # Main auth guard
-
-libs/@oc/business-core/
-└── modules/
-    └── tenant/
-        └── tenant.module.ts    # Global module
+```text
+HTTP request
+  -> AsyncContextMiddleware
+  -> LanguageMiddleware
+  -> AuditMiddleware
+  -> TenantContextMiddleware
+  -> Controller guard
+  -> Service
+  -> TenantAwareRepository
+  -> TenantSubscriber
+  -> Database
 ```
 
----
+## Core Files
 
-## Usage
+```text
+libs/@anvix/server-core/
+|-- context/
+|   `-- context.storage.ts                     # AsyncLocalStorage backing store
+|-- generic-service/
+|   |-- async-context.service.ts               # Sets/gets tenantId and userId in AsyncLocalStorage
+|   |-- audit-context.service.ts               # Audit context helper
+|   `-- request-context.service.ts             # Language/user request context helper
+|-- shared-modules/
+|   `-- context/
+|       `-- app-context.service.ts             # RequestContextService wrapper around AsyncContextService
+|-- middleware/
+|   |-- async-context.middleware.ts            # Initializes AsyncLocalStorage for each request
+|   |-- audit.middleware.ts                    # Captures audit metadata
+|   |-- language.middleware.ts                 # Captures request language
+|   `-- tenant-context.middleware.ts           # Validates tenant header and sets tenant context
+|-- database/
+|   |-- base-entities/
+|   |   |-- base-tenant-modifiable-entity.ts
+|   |   `-- base-tenant-modifiable-without-identity-entity.ts
+|   |-- repositories/
+|   |   `-- tenant-aware.repository.ts
+|   `-- subscribers/
+|       `-- tenant.subscriber.ts
+`-- custom-guards/
+    |-- jwt-auth.guard.ts
+    |-- role.guard.ts
+    `-- auth-role.guard.ts
+```
 
-### 1. Create a Tenant-Aware Entity
+## Middleware Order
+
+Middleware is registered in `src/app.module.ts` in this order:
 
 ```typescript
-import { Entity, Column } from "typeorm";
-import { BaseModifiableEntity } from "@core-database";
+consumer
+    .apply(AsyncContextMiddleware)
+    .forRoutes({ path: '*', method: RequestMethod.ALL })
+    .apply(LanguageMiddleware)
+    .forRoutes({ path: '*', method: RequestMethod.ALL })
+    .apply(AuditMiddleware)
+    .forRoutes({ path: '*', method: RequestMethod.ALL })
+    .apply(TenantContextMiddleware)
+    .forRoutes({ path: '*', method: RequestMethod.ALL });
+```
 
-@Entity("projects")
-export class Project extends BaseModifiableEntity {
-    @Column()
+`AsyncContextMiddleware` must run before `TenantContextMiddleware`, because tenant context is stored in `AsyncLocalStorage`.
+
+## Tenant Header
+
+`TenantContextMiddleware` reads tenant ID from either header:
+
+```text
+x-tenant
+x-tenant-id
+```
+
+If no tenant header exists, the middleware allows the request to continue. This supports public routes such as tenant lookup or login flows.
+
+If a tenant header exists, the middleware:
+
+1. Checks the tenant validation cache.
+2. Validates the tenant exists and is not soft deleted.
+3. Stores `tenantId` on the request object.
+4. Stores `tenantId` in `AsyncContextService`.
+
+## Tenant-Aware Entities
+
+Use tenant-aware base entities for data that belongs to a tenant.
+
+```typescript
+import { Column, Entity } from 'typeorm';
+import { BaseTenantModifiableEntity } from '../base-entities/base-tenant-modifiable-entity';
+
+@Entity('projects')
+export class Project extends BaseTenantModifiableEntity {
+    @Column({ type: 'varchar', length: 255, name: 'name' })
     name: string;
 }
 ```
 
-**That's it.** The entity now has `tenantId` column (from `BaseModifiableEntity`), and all audit fields.
-
-### 2. Create a Repository
+For entities that define their own primary key, use:
 
 ```typescript
-import { Inject, Injectable, Scope } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { TenantAwareRepository } from "@core-database";
-import { TenantContextService } from "@core-generic-services";
-import { Project } from "@core-database";
+import { BaseTenantModifiableEntityWithoutIdentity } from '../base-entities/base-tenant-modifiable-without-identity-entity';
+```
+
+System-wide entities should not use tenant-aware base entities. For example, `Tenant` extends `BaseSystemModifiableEntity` because the tenant record is the tenant owner record.
+
+## Base Entity Reference
+
+| Base class | Use for | Has `tenantId` |
+| --- | --- | --- |
+| `BaseTenantModifiableEntity` | Tenant-owned entities with default identity | Yes |
+| `BaseTenantModifiableEntityWithoutIdentity` | Tenant-owned entities with custom identity | Yes |
+| `BaseModifiableEntity` | Non-tenant audit-tracked entities | No |
+| `BaseModifiableEntityWithoutIdentity` | Non-tenant audit-tracked entities with custom identity | No |
+| `BaseSystemModifiableEntity` | System-wide records such as tenants | No |
+
+## Tenant-Aware Repositories
+
+Tenant-owned repositories should extend `TenantAwareRepository<T>`.
+
+```typescript
+import { TenantAwareRepository, Project } from '@core-database';
+import { RequestContextService } from '@core-shared-modules';
+import { Inject, Injectable, Scope } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProjectRepository extends TenantAwareRepository<Project> {
     constructor(
         @InjectRepository(Project)
         repository: Repository<Project>,
-        @Inject() tenantContextService: TenantContextService
+        @Inject() requestContextService: RequestContextService
     ) {
-        super(repository.target, repository.manager, repository.queryRunner, tenantContextService);
+        super(repository.target, repository.manager, repository.queryRunner, requestContextService);
     }
 
-    // Custom queries automatically filtered by tenantId
-    async findActiveProjects() {
-        return this.createQueryBuilder("project")
-            .where("project.isActive = :isActive", { isActive: true })
+    async findActiveProjects(): Promise<Project[]> {
+        return this.createQueryBuilder('project')
+            .where('project.is_active = :isActive', { isActive: true })
             .getMany();
-        // Automatically adds: AND project.tenantId = :tenantId
     }
 }
 ```
 
-**Key points:**
-- Extend `TenantAwareRepository<T>`
-- Decorate with `@Injectable({ scope: Scope.REQUEST })`
-- Pass `repository.target`, `repository.manager`, `repository.queryRunner`, and `tenantContextService` to `super()`
-- All `createQueryBuilder()` calls auto-filter by tenantId
+## What TenantAwareRepository Does
 
-### 3. Use in Service
+`TenantAwareRepository`:
+
+- applies `tenant_id = :tenantId` to query builder reads when the entity has a `tenantId` column
+- applies `deleted_at IS NULL` when the entity supports soft delete
+- applies tenant filters to joined aliases when joined entities have `tenantId`
+- overrides common read methods such as `find`, `findOne`, `findAndCount`, and `count`
+- adds tenant criteria to `update`, `delete`, and `softDelete`
+- sets `tenantId` during `insert`, `upsert`, and `save`
+- throws on `save` when an entity already belongs to a different tenant
+- exposes `createQueryBuilderUnfiltered()` for explicit system-level queries
+
+Use `createQueryBuilderUnfiltered()` carefully. It bypasses tenant filtering.
+
+## TenantSubscriber
+
+`TenantSubscriber` uses static methods on `AsyncContextService` because TypeORM subscribers are outside normal request-scoped dependency injection.
+
+It runs on:
+
+- `beforeInsert`: injects `tenantId` when the entity has a tenant column and no tenant is already set
+- `beforeUpdate`: prevents changing an entity to a tenant different from the current request context
+
+## Guards
+
+Current guard usage is split:
+
+- `JwtAuthGuard`: validates JWT and attaches user data to `request.user`; no role/permission checks.
+- `RoleGuard`: validates JWT and checks permissions from `@RequirePermissions()`.
+- `AuthRoleGuard`: includes tenant-aware JWT validation logic and token database validation, but current controllers primarily use `RoleGuard` and `JwtAuthGuard`.
+
+For new protected tenant-owned APIs, verify the current controller pattern before choosing a guard. If tenant matching against token payload is required, prefer aligning the route with `AuthRoleGuard` or update `RoleGuard` to set tenant context consistently.
+
+## Permission Decorator
+
+Use `@RequirePermissions()` with module and permission constants:
 
 ```typescript
-@Injectable()
-export class ProjectService {
-    constructor(
-        private readonly projectRepo: ProjectRepository
-    ) {}
+import { MODULE_CONSTANTS, PERMISSION_CONSTANTS } from '@core-constants';
+import { RequirePermissions } from '@core-custom-decorators';
+import { RoleGuard } from '@core-custom-guards';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 
-    async findAll() {
-        // Automatically filtered by tenantId!
-        return this.projectRepo.find();
+@Controller('projects')
+@UseGuards(RoleGuard)
+export class ProjectController {
+    @Get()
+    @RequirePermissions({
+        // Add PROJECT to MODULE_CONSTANTS before using this in a real module.
+        module: 'Project',
+        permission: PERMISSION_CONSTANTS.READ
+    })
+    async listProjects() {
+        // service call
     }
-
-    async create(dto: CreateProjectDto) {
-        // tenantId auto-injected by TenantSubscriber
-        const project = this.projectRepo.create(dto);
-        return this.projectRepo.save(project);
-    }
 }
 ```
 
----
+## Product Owner Bypass
 
-## Existing Repositories (Migration Guide)
+Current code has two related paths:
 
-**Don't panic!** Existing repositories using standard `Repository<T>` will continue to work.
+- `RoleGuard` bypasses permission checks for `UserTypeEnum.PRODUCT_OWNER`.
+- `AuthRoleGuard` bypasses tenant matching and permission checks for `UserTypeEnum.SUPER_ADMIN`.
 
-### Gradual Migration
+Before depending on product-owner bypass behavior for new APIs, confirm which guard the controller uses. The enum currently contains both `PRODUCT_OWNER` and `SUPER_ADMIN`, so guard behavior should be standardized if both are intended to mean different things.
 
-**Option 1: Keep using standard Repository**
-```typescript
-// Works fine - just add tenantId to where clauses manually
-async findProjects(tenantId: string) {
-    return this.repo.find({ where: { tenantId } });
-}
-```
+## Raw SQL And Views
 
-**Option 2: Migrate to TenantAwareRepository (recommended)**
-```typescript
-// Change extends and add proper constructor
-@Injectable({ scope: Scope.REQUEST })
-export class ProjectRepository extends TenantAwareRepository<Project> {
-    constructor(
-        @InjectRepository(Project)
-        repository: Repository<Project>,
-        @Inject() tenantContextService: TenantContextService
-    ) {
-        super(repository.target, repository.manager, repository.queryRunner, tenantContextService);
-    }
-    // createQueryBuilder() now auto-filters by tenantId
-}
-```
+`TenantAwareRepository` cannot safely inject tenant filters into raw SQL strings.
 
-### What TenantSubscriber Does
+For raw queries and database views:
 
-The `TenantSubscriber` automatically injects `tenantId` on:
-- `beforeInsert` - Sets `tenantId` from current request context
-- `beforeUpdate` - Validates `tenantId` hasn't changed
+- manually filter by `tenant_id`
+- never trust a caller-provided tenant ID without validating it against request context
+- document why `createQueryBuilderUnfiltered()` or raw SQL is needed
 
-This works **regardless** of which repository you use.
+## New Tenant-Owned Module Checklist
 
----
+- [ ] Entity extends `BaseTenantModifiableEntity` or `BaseTenantModifiableEntityWithoutIdentity`.
+- [ ] Repository extends `TenantAwareRepository<T>`.
+- [ ] Repository is request-scoped with `@Injectable({ scope: Scope.REQUEST })`.
+- [ ] Repository injects `RequestContextService` from `@core-shared-modules`.
+- [ ] Controller uses the correct guard for JWT, tenant, and permission needs.
+- [ ] Controller uses `@RequirePermissions()` where needed.
+- [ ] Raw queries include explicit tenant filtering.
+- [ ] Migration includes `tenant_id` and index when applicable.
+- [ ] Tests include tenant context setup.
 
-## AuthRoleGuard (Main Guard)
+## Test Setup
 
-Handles:
-- ✅ JWT validation
-- ✅ Tenant matching (token.tenantId === x-tenant header)
-- ✅ Permission checks via `@RequirePermissions()`
-- ✅ PRODUCT_OWNER bypass (SUPER_ADMIN skips tenant checks)
-
-### Usage
+For repository-level tests, set tenant context before running tenant-aware queries:
 
 ```typescript
-@UseGuards(AuthRoleGuard)
-@RequirePermissions({ module: "PROJECT", permission: "READ" })
-@Get()
-async getProjects() {
-    // Only users with PROJECT.READ permission can access
-    // Tenant context is validated and set
-}
+requestContextService.setTenantId('test-tenant-id');
+
+const projects = await projectRepository.find();
 ```
 
----
-
-## Key Differences from Standard Architecture
-
-| Feature | Standard | Tenant-Aware |
-|---------|----------|--------------|
-| **Entity** | `extends BaseModifiableEntity` (no tenantId) | `extends BaseModifiableEntity` (has tenantId) |
-| **Repository** | `extends Repository<T>` | `extends TenantAwareRepository<T>` |
-| **Queries** | Manual tenant filtering | Auto-filtered by `createQueryBuilder()` |
-| **Inserts** | Manual tenantId setting | Auto-injected by `TenantSubscriber` |
-| **Updates** | No tenant validation | Validates tenantId hasn't changed |
-
----
-
-## What Was Simplified
-
-❌ **Removed:**
-- TenantRule entity/service/repository (feature flags not needed)
-- RuleGuard (rule enforcement not needed)
-- @RequireRule decorator
-- Complex method overrides in TenantAwareRepository
-- Separate `BaseTenantEntity` files (tenantId now in `BaseModifiableEntity`)
-- Static `TenantContext` class (causes race conditions)
-
-✅ **Kept:**
-- Automatic tenant filtering via `createQueryBuilder()`
-- Auto-injection of `tenantId` via `TenantSubscriber`
-- Tenant validation via `AuthRoleGuard`
-- SUPER_ADMIN bypass (built into guard, no decorator needed)
-
----
-
-## Quick Reference
-
-### Base Entities
-
-| Base Class | Use For | Has tenantId |
-|-----------|---------|--------------|
-| `BaseModifiableEntity` | Business data (projects, users, roles, etc.) | ✅ |
-| `BaseModifiableEntityWithoutIdentity` | Business data with custom PK | ✅ |
-| `BaseSystemModifiableEntity` | System data (tenants, global configs) | ❌ |
-
-### Guards
-
-| Guard | Use When |
-|-------|----------|
-| `AuthRoleGuard` | Full auth + tenant + permissions (default) |
-| `TenantGuard` | Need tenant context but no auth (rare) |
-
-### Decorators
-
-| Decorator | Purpose |
-|-----------|---------|
-| `@RequirePermissions({ module, permission })` | Require specific permission |
-
----
-
-## Testing
-
-No special test setup needed. Just set tenant context in tests:
+If using `AsyncContextService` directly, initialize context first:
 
 ```typescript
-// In test setup
-tenantContextService.setTenantId("test-tenant-id");
-
-// Run tests - all queries auto-filtered
-const projects = await projectRepo.find();
+asyncContextService.initializeContext();
+asyncContextService.setTenantId('test-tenant-id');
 ```
-
----
-
-## Migration Steps
-
-1. **Add tenantId column** to existing tables via migration
-2. **Update entities** — they already extend `BaseModifiableEntity` (now includes `tenantId`)
-3. **Update repositories** to extend `TenantAwareRepository`
-4. **Test** - verify queries return correct tenant data
-5. **Deploy**
-
-### Migration Command
-
-```bash
-npm run typeorm migration:generate -- -n add-tenant-columns
-npm run typeorm migration:run
-```
-
----
 
 ## Troubleshooting
 
-### "Tenant context is required" Error
-- Ensure `x-tenant` header is present
-- Check `AuthRoleGuard` is applied to route
+### Tenant context is missing
 
-### "Tenant mismatch" Error
-- JWT token's `tenantId` doesn't match `x-tenant` header
-- User is trying to access data from different tenant
+- Confirm `AsyncContextMiddleware` runs before `TenantContextMiddleware`.
+- Confirm request includes `x-tenant` or `x-tenant-id` for tenant-owned routes.
+- Confirm guard does not overwrite or skip tenant context unexpectedly.
 
-### Data Not Filtered by Tenant
-- Ensure repository extends `TenantAwareRepository`
-- Check `TenantContextService` is request-scoped
-- Verify `TenantSubscriber` is registered in TypeORM config
+### Tenant mismatch
 
----
+- Check the tenant ID in the JWT payload.
+- Check the `x-tenant` or `x-tenant-id` header.
+- Confirm whether the current guard allows product-owner or super-admin bypass.
 
-## That's It!
+### Data is not filtered by tenant
 
-The tenant architecture is intentionally simple:
-- **One base class** for entities
-- **One base class** for repositories
-- **One subscriber** for auto-injection
-- **One guard** for validation
-
-No complex rule engines, no feature flags, no extra overhead. Just secure data isolation.
+- Confirm the entity has a `tenantId` property.
+- Confirm the entity extends a tenant-aware base entity.
+- Confirm the repository extends `TenantAwareRepository<T>`.
+- Confirm raw SQL or unfiltered query builders are not being used accidentally.

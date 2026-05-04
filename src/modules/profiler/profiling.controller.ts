@@ -53,12 +53,12 @@ export class ProfilerController {
     getProfilerUI() {
         const fs = require("fs");
         const path = require("path");
-        const htmlPath = path.join(__dirname, "..", "libs/@oc/server-core/assets", "profiler-dashboard.html");
+        const htmlPath = path.join(__dirname, "..", "libs/@anvix/server-core/assets", "profiler-dashboard.html");
 
         // If file doesn't exist in dist (common in dev), check src
         const finalPath = fs.existsSync(htmlPath)
             ? htmlPath
-            : path.join(process.cwd(), "libs/@oc/server-core/assets", "profiler-dashboard.html");
+            : path.join(process.cwd(), "libs/@anvix/server-core/assets", "profiler-dashboard.html");
 
         if (!fs.existsSync(finalPath)) {
             return "Dashboard source not found. Please ensure src/profiler-dashboard.html exists.";
@@ -74,10 +74,10 @@ export class ProfilerController {
     getProfilerScript() {
         const fs = require("fs");
         const path = require("path");
-        const jsPath = path.join(__dirname, "..", "libs/@oc/server-core/assets", "profiler-dashboard.js");
+        const jsPath = path.join(__dirname, "..", "libs/@anvix/server-core/assets", "profiler-dashboard.js");
         const finalPath = fs.existsSync(jsPath)
             ? jsPath
-            : path.join(process.cwd(), "libs/@oc/server-core/assets", "profiler-dashboard.js");
+            : path.join(process.cwd(), "libs/@anvix/server-core/assets", "profiler-dashboard.js");
 
         if (!fs.existsSync(finalPath)) {
             return "// Dashboard script not found.";

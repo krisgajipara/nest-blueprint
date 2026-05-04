@@ -20,7 +20,7 @@ export const mailConfig = {
             from: `"Standard " <${configService.get("email.user")}>`
         },
         template: {
-            dir: "libs/@oc/server-core/email-templates",
+            dir: "libs/@anvix/server-core/email-templates",
             adapter: new HandlebarsAdapter(),
             options: {
                 strict: true

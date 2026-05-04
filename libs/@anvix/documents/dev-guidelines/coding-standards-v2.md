@@ -1,118 +1,292 @@
-# Coding Standards Rule Book - Minimized Summary (All Details Preserved)
+# Coding Standards
 
-## Table of Contents
-1. [Folder Structure](#1-folder-structure)
-2. [DTOs](#2-dtos)
-3. [Entities & Database](#3-entities--database)
-4. [Naming](#4-naming)
-5. [Technology Stack & Patterns](#5-tech-stack--patterns)
-6. [APIs & Endpoints](#6-apis--endpoints)
-7. [Error Handling & Validation](#7-error-handling--validation)
-8. [Code Quality & Style](#8-code-quality--style)
-9. [Constants](#9-constants)
-10. [Reusability & Modularity](#10-reusability--modularity)
-11. [Dependencies & Circular](#11-dependencies--circular)
-12. [REST API Standards](#12-rest-api-standards)
-13. [Permissions & Security](#13-permissions--security)
-14. [Multi-Tenancy Standards](#14-multi-tenancy-standards)
+This is the canonical coding standards document for the backend.
+
+Last verified against repo: 2026-05-04
+
+Use this document for code generation, code review, and AI-assisted module work. Older duplicate standards files under `dev-guidelines/coding-standards-rule/` have been removed after their useful content was merged here.
 
 ## 1. Folder Structure
-- **Core:** `libs/@oc/server-core` (entities, repos, services, DTOs, enums, migrations, shared modules).
-- **APIs:** `src/modules/{module}` (controllers, Nest modules).
-- **Business:** `libs/@oc/business-core/modules/{module}/` (per-module logic).
-- **DTOs:** `libs/@oc/business-core/modules/{module}/dto/{request|response}`.
-- **Enums:** `libs/@oc/server-core/enums`.
-- **Utils/Decorators:** `libs/@oc/server-core/utilities`, `libs/@oc/server-core/shared-modules`.
-- **Constants:** `libs/@oc/server-core/constants` (entity lengths, business logic).
 
-## 2. DTOs
-- **Separation:** Every API must have DTOs separated into `request` and `response` folders per module.
-- **Validation:** STRICTLY prioritize custom validators from `libs/@oc/server-core/custom-validators/`. NEVER use class-validator decorators. If a custom validator doesn't exist for your validation need, it must be added to the custom validators library.
-- **Type Validation - STRICT RULE:** NEVER use class-validator type decorators (`@IsUUID()`, `@IsDateString()`, `@IsDate()`, `@IsBooleanString()`, `@IsBoolean()`, `@IsNumberString()`, `@IsNumber()`, `@IsString()`). ALWAYS use `ValidateType()` with appropriate `FieldTypeEnum` value. Available types: String, Number, NumberString, Boolean, BooleanString, Date, DateString, UUID, Array.
-- **Response DTOs Schema:** NEVER create inline object types in response DTOs. Create private DTO classes for nested objects instead.
-- **Response DTOs Constructor:** Response DTOs must contain mapping logic from entities within their constructors. DO NOT use entity methods or business logic in constructors - only direct property mapping.
-- **Response DTOs Instantiation: CRITICAL** - Do NOT use response DTOs as types when instantiating them. Always instantiate response DTOs directly using their constructor with mapping logic.
-- **Mapping Logic Location:** All mapping logic MUST be done exclusively in the DTO's constructor. DO NOT perform mapping or transformation in service layers. The service layer should pass raw data directly to the DTO constructor.
-- **Repository to DTO Mapping:** Response DTOs must contain mapping logic from entities within their constructors. The service layer will pass the object received from the repository directly to the response DTO's constructor for mapping (pass the whole object, not individual properties).
-- **Exports:** All DTOs within a module's `request` and `response` directories must be re-exported from an `index.ts` file in their respective directories and then from a `dto/index.ts` file.
-- **Imports:** Always use tsconfig path aliases for importing DTOs (e.g., from `@business-core-modules`).
-- **Swagger:** All DTOs must use proper validator decorators for Swagger via `@ApiProperty`.
-  - **STRICT RULE - @ApiProperty Usage for DTO/Object Types:** When the property type is a DTO class or Object, NEVER use `example` property in `@ApiProperty()` decorator. ALWAYS use `type` property and assign the appropriate DTO class or TypeScript type. ALWAYS provide meaningful `description` for API documentation.
+- API controllers and Nest feature modules live in `src/modules/{module}`.
+- Business services, repositories, and feature DTOs live in `libs/@anvix/business-core/modules/{module}`.
+- Shared/common DTOs live in `libs/@anvix/business-core/dto/common-dto`.
+- Entities, base entities, migrations, repositories, and subscribers live in `libs/@anvix/server-core/database`.
+- Shared enums live in `libs/@anvix/server-core/enums`.
+- Shared constants live in `libs/@anvix/server-core/constants`.
+- Shared validators live in `libs/@anvix/server-core/custom-validators`.
+- Shared decorators live in `libs/@anvix/server-core/custom-decorators`.
+- Shared guards live in `libs/@anvix/server-core/custom-guards`.
+- Shared infrastructure services live in `libs/@anvix/server-core/shared-modules`.
+- Shared utilities live in `libs/@anvix/server-core/utilities`.
 
-## 3. Entities & Database
-- **PKs:** UUID (`@PrimaryGeneratedColumn('uuid')`).
-- **Relationships:** `cascade: true`.
-- **Deletes:** Soft-delete with `softRemove()` (not `remove()`/`delete()`).
-- **Inheritance:** `BaseModifiableEntity` + `Identity`.
-- **Unique:** Define in `DatabaseUniqueKey` enum (`UK_{TABLE}_{FIELDS}`); use `@Unique(DatabaseUniqueKey.X, ["fields"])`.
+## 2. Imports
 
-## 4. Naming
-- **Files:** Kebab-case (e.g., `user-module.ts`).
-- **Classes:** PascalCase (e.g., `UserModule`).
+- Use `tsconfig.json` path aliases for cross-package imports.
+- Avoid long relative imports across package boundaries.
+- Avoid hardcoded absolute imports such as `libs/@anvix/...` inside TypeScript source.
+- Re-export DTOs and modules through local `index.ts` files when a root alias import is expected.
 
-## 5. Tech Stack & Patterns
-- **NestJS, TS, PostgreSQL, TypeORM.**
-- **Env:** Via `ConfigService`.
-- **Docs:** Swagger (`@ApiTags`, `@ApiOperation`, `@ApiResponse`, `@ApiProperty`).
-- **Responses:** `ApiResponseStatus(description, statuses, module, responseDto)` - responseDto as 4th param MANDATORY.
-- **Enums:** Postgres enums or TS string enums.
+Current aliases:
 
-## 6. APIs & Endpoints
-- **Controllers:** Handle incoming requests, validate input DTOs, call service methods, and return responses. No business logic. When APIs require query parameters, always use dedicated request DTOs with `@Query()` instead of individual parameters (global ValidationPipe handles validation).
-- **Services:** Contain all business logic, orchestrate repositories and other services. Return `AppResponse` objects using the `new AppResponse(SuccessConstant.AddSuccessAction, { data }, { module: "ModuleName" })` syntax for specific actions, or `new AppResponse(SuccessConstant.SuccessAction, { data }, { module: "ModuleName", action: "actionName" })` for generic actions. Only use the third parameter when using SuccessConstant. For other success messages, omit the third parameter.
-- **Repositories:** Handle direct database access and complex queries. SELECTIVELY RETURN DATA - never return all fields from repository level. Return only what the API needs for optimal performance.
-- **Query Builder:** Use TypeORM Query Builder with managers where possible for complex queries. ALWAYS use defined ENUMs instead of hardcoded strings.
-- **List Endpoints:** All list endpoints must implement searching, filtering, pagination, and sorting.
-- **Return Shape:** List endpoints should return data in the shape `{ data: [...], total: number, limit, offset }` using `CommonSearchResponseDto`.
-- **Search API Implementation - STRICT RULE:** Controller Decorator: Use `CommonSearchResponseDto` as 4th parameter and entity DTO as 5th parameter in `ApiResponseStatus`. Return Type: `AppResponse<CommonSearchResponseDto<EntityDto>>`. Service Response: Instantiate `new CommonSearchResponseDto<EntityDto>(results, pageSize, page, total)`.
+```text
+@business-core-dto
+@business-core-modules
+@core-config
+@core-constants
+@core-custom-decorators
+@core-custom-guards
+@core-custom-validators
+@core-database
+@core-enums
+@core-filters
+@core-generic-services
+@core-interceptors
+@core-interfaces
+@core-middleware
+@core-shared-modules
+@core-utilities
+```
 
-## 7. Error Handling & Validation
-- **Pipe:** Global `ValidationPipe`.
-- **Exceptions:** `HttpExceptions` with standardized msgs from `error.json` (e.g., `{message: "ERR_MODULE_NOT_FOUND", module: "X"}`).
-- **Error Keys:** `ERR_MODULE_NOT_FOUND`, `ERR_MIN_LENGTH`, `ERR_MAX_LENGTH`, `ERR_REQUIRED`, `ERR_TYPE`, `ERR_IS_ENUM`, `ERR_DELETED`, `ERR_NOT_VALID`, `ERR_ALPHA_NUMERIC`, `ERR_UNIQUE_ARRAY_ITEM`, `ERR_ONLY_SPACE`, `ERR_MIN_VALUE`, `ERR_MAX_VALUE`.
+Relative imports are acceptable for nearby implementation details inside the same folder/package, especially where a symbol is not exported by an alias barrel. Example: current database entities import base entities using `../base-entities/...`.
 
-## 8. Code Quality & Style
-- **Swagger:** Provide Swagger documentation for every endpoint.
-- **Comments:** Add inline comments to describe the purpose of methods and classes.
-- **CRITICAL - Import Rules:** NEVER use relative paths or hardcoded absolute paths. ALWAYS use tsConfig path aliases for ALL imports. All DTOs and modules must be properly re-exported through `index.ts` files to enable clean imports from root aliases. Common aliases: `@business-core-modules`, `@business-core-dto`, `@core-database`, `@core-enums`, `@core-utilities`, `@core-custom-validators`, `@core-custom-decorators`.
-- **Asynchronous Code:** Use `async/await` for all asynchronous operations. Precise Async Usage: Only declare methods as `async` when they actually perform asynchronous operations (contain `await`). Remove `async` keyword from methods that just return Promises directly.
-- **AppResponse Usage:** The third parameter controls dynamic message generation. Module only: `{ module: 'Entity' }` → "Entity list fetched successfully". Module + Action: `{ module: 'Entity', action: 'created' }` → "Entity has been created successfully". Omit parameter: For custom messages or when SuccessConstant provides exact text.
-- **Transactions:** Use TypeORM's `QueryRunner` for multi-step database changes.
+## 3. DTOs
 
-## 9. Constants
-- **Location:** Constants for entity field lengths and common business logic should be in `libs/@oc/server-core/constants`.
-- **Usage:** For entity string columns with length constraints, define constants for these lengths and reuse them in DTOs for validation.
-- **Structure:** Per entity, there should be only one constant file containing all length/constant values.
-- **Naming:** Constants should be named in PascalCase, e.g., `CustomerConstant`. Keys within constant objects should also be in PascalCase, e.g., `AddSuccessAction` instead of `ADD_SUCCESS_ACTION`.
-- **AppResponse Usage:** When services return `AppResponse`, the first parameter must be from `SuccessConstant`. For specific actions like create/update/delete, use predefined constants (e.g., `SuccessConstant.AddSuccessAction`). For generic actions, use `SuccessConstant.SuccessAction` and pass both `module` and `action` as the third parameter to generate messages like "{module} has been {action} successfully."
+- Every API must use request and response DTOs.
+- Feature DTOs should live under `libs/@anvix/business-core/modules/{module}/dto/request` and `dto/response`.
+- Shared DTOs should live under `libs/@anvix/business-core/dto/common-dto`.
+- Request DTOs validate incoming payload/query data.
+- Response DTOs shape outgoing API data.
+- Do not return raw entities directly from controllers.
+- Response DTO constructors may map entity/repository data into API-safe shapes.
+- Keep mapping in DTO constructors or focused mapper helpers; do not spread mapping logic across controllers.
+- Do not create inline object shapes for nested response objects when a DTO class would be clearer.
+- Re-export DTOs from request/response `index.ts` files and the feature `dto/index.ts`.
 
-## 10. Reusability & Modularity
-- **Self-contained modules.**
-- **Translations:** In translation module.
-- **Utils:** `libs/@oc/server-core/utilities` or `shared-modules`.
+## 4. Validation
 
-## 11. Dependencies & Circular
-- **🚫 STRICT RULE: No Circular Dependencies** Circular dependencies (A depends on B, B depends on A) are a sign of poor architectural design and are STRICTLY PROHIBITED.
-- **Repositories:** NEVER use `forwardRef()` in repositories. Repositories should be "leaf" nodes or depend only on lower-level repositories in a strict DAG (Directed Acyclic Graph). One-way Flow: Service → Facade Repository → Base Repository → Entity.
-- **Services:** Avoid circular service dependencies (UserService needs AuthService needs UserService). Solution: Extract shared logic into a third service or utility, or use event-based communication.
-- **Modules:** Use `forwardRef()` in Modules only as a last resort for loose coupling between feature modules.
+- Prefer custom validators from `@core-custom-validators`.
+- Do not use `class-validator` decorators directly when an existing custom validator covers the need.
+- For type checks, prefer `ValidateType()` with `FieldTypeEnum`.
+- If a required validator does not exist, add it to `libs/@anvix/server-core/custom-validators`.
+- Use dedicated query DTOs with `@Query()` for list/search endpoints.
 
-## 12. REST API Standards
-- **Resource Naming:** Use nouns for resource URLs, not verbs. Resources should generally be plural. Good: `/users`, `/products/{productId}`. Bad: `/getUsers`, `/createProduct`, `/user/{userId}/order`.
-- **HTTP Methods:** Use HTTP methods correctly to indicate the action on a resource: GET: Retrieve a resource or a list of resources. POST: Create a new resource. PUT / PATCH: Update an existing resource. DELETE: Delete a resource.
-- **HTTP Status Codes:** Return standard HTTP status codes to indicate the outcome of a request: 200 OK: Successful GET, PUT, PATCH. 201 Created: Successful POST. 204 No Content: Successful DELETE. 400 Bad Request: Invalid request payload (e.g., validation error). 401 Unauthorized: Missing or invalid authentication. 403 Forbidden: The user is not permitted to access this resource. 404 Not Found: The requested resource does not exist.
-- **API Versioning:** Implement API versioning (e.g., `/api/v1/users`) to allow for API evolution without breaking existing clients.
+Example:
 
-## 13. Permissions & Security
-- **🔒 STRICT RULE: UUID Validation Pipes** MANDATORY REQUIREMENT - NO EXCEPTIONS ALLOWED All NestJS controller route parameters that accept UUID values MUST use the `ParseUUIDPipe` for validation.
-- **When adding a new module, ALWAYS update the permissions system:** Module Constants: Add the new module constant to `MODULE_CONSTANTS` in `libs/@oc/server-core/constants/permissions.constant.ts`. Default Permissions: Add the module to `DEFAULT_PERMISSIONS` array with full CRUD permissions (read, write, edit, delete). Controller Decorators: Update controllers to use `@RequirePermissions` decorator with appropriate module and permission constants. Guards: Ensure guards are applied: `@UseGuards(RolesGuard, AuthGuard)` and `@ApiBearerAuth()`.
+```typescript
+import { ValidateNotEmpty, ValidateType } from '@core-custom-validators';
+import { FieldTypeEnum } from '@core-enums';
+import { ApiProperty } from '@nestjs/swagger';
 
-## 14. Multi-Tenancy Standards
-- **🛡️ Secure by Default** Our application uses a strict multi-tenancy model where data isolation is enforced at the repository layer. Developers must adhere to these rules to prevent cross-tenant data leaks.
-- **1. Repository Inheritance:** Rule: All repositories MUST extend `TenantAwareRepository<T>` and inject `TenantContextService`. Reason: This base class overrides `createQueryBuilder` to automatically inject `where: { tenant_id }`.
-- **2. One Entity - One Repository Rule:** Rule: Every `BaseModifiableEntity` MUST have a dedicated `Repository` class extending `TenantAwareRepository`. Prohibited: Do NOT inject `Repository<T>` directly into Services. Prohibited: Do NOT create "Composite Repositories" that inject multiple standard `Repository<T>` instances (like the old `AuthRepository` or `ProductRepository`). Correction: Split them into dedicated repositories (`ProductVariantRepository`, `OtpRepository`) and inject those instead.
-- **3. Database Views & Raw SQL:** Caution: The `TenantAwareRepository` cannot inject filters into raw SQL strings or View definitions. Requirement: You MUST manually handle `tenant_id` in `.query()` calls and `CREATE VIEW` statements.
-- **Entity Inheritance:** All business entities MUST extend `BaseModifiableEntity` (from `@core-database`). This ensures the `tenant_id` column is present and indexed. Exception: System-wide entities (like `Tenant`) may extend `BaseSystemModifiableEntity`.
-- **Repository Pattern:** NEVER extend the standard TypeORM `Repository<T>`. ALWAYS extend `TenantAwareRepository<T>` and inject `TenantContextService`. ALWAYS decorate with `@Injectable({ scope: Scope.REQUEST })` to ensure the tenant context is derived from the current request.
-- **Automatic Filtering:** The `TenantAwareRepository` automatically applies `tenant_id = :current_tenant` to all `createQueryBuilder` queries. Recursive Joins: It also automatically filters joined tables if they have a `tenant_id` column.
-- **⚠️ Critical Cautions:** Raw SQL: If you use `.query('SELECT ...')`, you bypassed the security layer. YOU must manually add `WHERE tenant_id = $1`. Database Views: Views must include `tenant_id` in their definition (Select list and Group By) so the repository can filter them.
+export class CreateUserRequestDto {
+    @ApiProperty({ description: 'User email address' })
+    @ValidateNotEmpty({ constraints: { field: 'email' } })
+    @ValidateType({ constraints: { field: 'email', type: FieldTypeEnum.String } })
+    email: string;
+}
+```
+
+## 5. Swagger
+
+- Add Swagger metadata to every endpoint and DTO.
+- Use `@ApiTags`, `@ApiOperation`, `@ApiBearerAuth`, and the project `ApiResponseStatus` decorator.
+- Always pass the response DTO to `ApiResponseStatus` when the endpoint returns data.
+- For DTO/object properties in `@ApiProperty()`, prefer `type` over large object examples.
+- Add meaningful descriptions to DTO properties.
+
+Example:
+
+```typescript
+@ApiResponseStatus('Get user by ID', [HttpStatus.OK, HttpStatus.NOT_FOUND], 'User', UserResponseDto)
+```
+
+For list endpoints, use the common response DTO pattern:
+
+```typescript
+@ApiResponseStatus('List users', [HttpStatus.OK], 'User', CommonSearchResponseDto, UserResponseDto)
+```
+
+## 6. Entities And Database
+
+- Use UUID primary keys with `@PrimaryGeneratedColumn('uuid')` unless a custom identity is required.
+- Use TypeORM entities under `libs/@anvix/server-core/database/entities`.
+- Use soft delete for removable records.
+- Define unique constraint names in constants such as `DatabaseUniqueKey`.
+- Avoid hardcoded database constraint names.
+- Use field length constants from `@core-constants` for string columns and matching DTO validation.
+- Keep migrations under `libs/@anvix/server-core/database/migrations`.
+
+Tenant-owned entities must extend one of:
+
+- `BaseTenantModifiableEntity`
+- `BaseTenantModifiableEntityWithoutIdentity`
+
+System-wide entities such as `Tenant` should extend `BaseSystemModifiableEntity`.
+
+## 7. Repositories
+
+- Repositories handle direct database access and complex query construction.
+- Services should not inject TypeORM `Repository<T>` directly for tenant-owned entities.
+- Tenant-owned repositories must extend `TenantAwareRepository<T>`.
+- Tenant-owned repositories must be request-scoped with `@Injectable({ scope: Scope.REQUEST })`.
+- Tenant-owned repositories must inject `RequestContextService` from `@core-shared-modules`.
+- Return only fields needed by the API. Do not select everything by habit.
+- Use TypeORM QueryBuilder for complex queries.
+- Use enums/constants instead of hardcoded strings.
+- Avoid circular dependencies between repositories.
+
+Example:
+
+```typescript
+import { TenantAwareRepository, User } from '@core-database';
+import { RequestContextService } from '@core-shared-modules';
+import { Inject, Injectable, Scope } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+@Injectable({ scope: Scope.REQUEST })
+export class UserRepository extends TenantAwareRepository<User> {
+    constructor(
+        @InjectRepository(User)
+        repository: Repository<User>,
+        @Inject() requestContextService: RequestContextService
+    ) {
+        super(repository.target, repository.manager, repository.queryRunner, requestContextService);
+    }
+}
+```
+
+## 8. Services
+
+- Services contain business logic.
+- Controllers should call services and avoid business rules.
+- Services should orchestrate repositories and shared services.
+- Services should return `AppResponse` where that is the existing module pattern.
+- Use success constants consistently.
+- Do not perform database query construction in controllers.
+- Keep transaction logic in services or repositories, depending on the existing module pattern.
+- Use TypeORM `QueryRunner` for multi-step transactional writes.
+
+## 9. Controllers And APIs
+
+- Controllers handle HTTP request/response concerns only.
+- Use RESTful resource names; prefer plural nouns such as `/users`.
+- Use HTTP methods according to intent:
+  - `GET` for reads
+  - `POST` for create/actions
+  - `PUT` or `PATCH` for updates
+  - `DELETE` for deletes
+- Use `ParseUUIDPipe` for UUID route parameters.
+- Use dedicated request DTOs for body and query validation.
+- Apply guards and `@ApiBearerAuth()` consistently on protected routes.
+- Apply `@RequirePermissions()` where permission checks are required.
+
+Example:
+
+```typescript
+@Get(':id')
+async getById(@Param('id', ParseUUIDPipe) id: string) {
+    return this.userService.getById(id);
+}
+```
+
+## 10. List Endpoints
+
+- List endpoints must support pagination.
+- Add search/filter/sort support where the product workflow needs it.
+- Use `CommonSearchResponseDto` for list responses.
+- Repository methods should return `[items, total]` when using TypeORM pagination.
+- Services should map entities into response DTOs.
+
+Example service shape:
+
+```typescript
+const [users, total] = await this.userRepository.findUsers(request);
+const data = users.map((user) => new UserResponseDto(user));
+const response = new CommonSearchResponseDto(data, request.pageSize, request.pageNumber, total);
+return new AppResponse(SuccessConstant.SuccessAction, { data: response }, { module: 'User', action: 'fetched' });
+```
+
+## 11. Error Handling
+
+- Use NestJS exceptions for invalid flows.
+- Use standard error keys from `libs/@anvix/server-core/utilities/i18n/en/error.json`.
+- Prefer structured error payloads when module/action context matters.
+- Avoid hardcoded user-facing error text in services.
+
+Common error keys:
+
+```text
+ERR_MODULE_NOT_FOUND
+ERR_MIN_LENGTH
+ERR_MAX_LENGTH
+ERR_REQUIRED
+ERR_TYPE
+ERR_IS_ENUM
+ERR_DELETED
+ERR_NOT_VALID
+ERR_ALPHA_NUMERIC
+ERR_UNIQUE_ARRAY_ITEM
+ERR_ONLY_SPACE
+ERR_MIN_VALUE
+ERR_MAX_VALUE
+```
+
+## 12. Constants
+
+- Put shared constants in `libs/@anvix/server-core/constants`.
+- Use entity-specific constants for field lengths.
+- Use permission constants from `permissions.constant.ts`.
+- Use success constants from `success.constant.ts`.
+- Do not scatter magic strings across controllers/services/repositories.
+
+## 13. Permissions And Security
+
+- Add new module names to `MODULE_CONSTANTS`.
+- Add default module permissions to `DEFAULT_PERMISSIONS` if the module is permission-controlled.
+- Use `@RequirePermissions()` on permission-protected endpoints.
+- Use the guard pattern already used by the surrounding controller.
+- Use `@ApiBearerAuth()` for bearer-token endpoints.
+- Confirm product-owner/super-admin behavior before depending on bypass behavior.
+
+## 14. Multi-Tenancy
+
+- Tenant-owned data must use tenant-aware base entities.
+- Tenant-owned repositories must extend `TenantAwareRepository<T>`.
+- `TenantAwareRepository` filters normal repository/query-builder reads by tenant when `tenantId` exists.
+- Raw SQL and database views must manually include tenant filtering.
+- Use `createQueryBuilderUnfiltered()` only for intentional system-level operations.
+- Never trust a caller-provided tenant ID without validating request context.
+
+See `libs/@anvix/documents/TENANT_GUIDE.md` for the detailed tenant architecture.
+
+## 15. Dependency Management
+
+- Avoid circular dependencies.
+- Do not use `forwardRef()` in repositories.
+- Use `forwardRef()` in modules only as a last resort.
+- If two services need each other, extract shared behavior into a third service/helper or use event-style coordination.
+- Keep dependency direction clear:
+
+```text
+Controller -> Service -> Repository -> Entity
+```
+
+## 16. Async Code
+
+- Use `async/await` for asynchronous operations.
+- Do not mark a method `async` if it only returns another promise without awaiting.
+- Keep asynchronous error handling clear and close to the operation that can fail.
+
+## 17. Comments
+
+- Add comments for classes and public methods where they clarify intent.
+- Avoid comments that merely repeat the code.
+- Prefer concise comments around business rules, security-sensitive logic, and non-obvious query behavior.
+
+## 18. Before Finishing A Change
+
+- Run the relevant build/lint/test command when practical.
+- Update docs when folder structure, migrations, tenant behavior, API patterns, or standards change.
+- Check for stale duplicate documentation before adding new standards files.
+

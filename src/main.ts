@@ -15,7 +15,7 @@ import { useContainer, Validator } from "class-validator";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
-import { preloadSecrets } from "libs/@oc/server-core/utilities/app-aws-secrets.utility";
+import { preloadSecrets } from "libs/@anvix/server-core/utilities/app-aws-secrets.utility";
 import { AppModule } from "./app.module";
 import { TenantModule } from "./modules/tenant/tenant.module";
 

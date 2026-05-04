@@ -1,123 +1,133 @@
 # TypeORM Database Migrations Guide
 
-This document outlines the process for managing database schema changes using TypeORM migrations in this project.
+This document explains how database schema changes and seed data are managed in this project.
+
+Last verified against repo: 2026-05-04
+
+Verified files:
+- `package.json`
+- `libs/@anvix/server-core/database/data-source.ts`
+- `libs/@anvix/server-core/database/migrations/`
 
 ## Migration Folder Structure
 
-Migrations are organized into subfolders for better maintainability:
+Current migration folders:
 
+```text
+libs/@anvix/server-core/database/migrations/
+|-- database-changes/                  # Schema migrations
+|   `-- 1699999999999-initial-tenant-setup.ts
+`-- seeders/                           # Seed data migrations
+    `-- 9999999999999-seed-product-owner.ts
 ```
-libs/@oc/server-core/database/migrations/
-├── database-changes/  # Data Definition Language (schema changes, table alterations)
-├── functions/         # Database functions and procedures
-└── seeds/             # Data seeding migrations
-```
 
-### Folder Guidelines
+## Folder Guidelines
 
-- **`database-changes/`** - Table creation, column additions/removals, index creation, constraints
-- **`functions/`** - PostgreSQL functions, triggers, stored procedures
-- **`seeds/`** - Initial data population, reference data, system configuration
+- `database-changes/`: table creation, column changes, indexes, constraints, and other schema updates.
+- `seeders/`: initial or reference data such as product owner, default roles, permissions, and lookup values.
+
+There is currently no `functions/` folder and no npm script dedicated to database function migrations. If PostgreSQL functions, triggers, or stored procedures are added later, create the folder and add matching npm scripts before documenting that workflow.
 
 ## Prerequisites
 
-- Ensure your PostgreSQL database is running
-- Environment variables are configured in `config/env/development.env`
-- Project is built: `npm run build`
+- PostgreSQL database is running.
+- Environment variables are configured in `config/env/development.env`.
+- TypeScript path aliases are available through `tsconfig-paths/register`.
+- TypeORM CLI uses `libs/@anvix/server-core/database/data-source.ts`.
 
-## Migration Commands
+## Available Migration Scripts
 
-### Initial Setup (One-time)
+The current `package.json` exposes these migration scripts:
+
+```json
+{
+  "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js --dataSource libs/@anvix/server-core/database/data-source.ts",
+  "migration:generate": "cross-env NODE_ENV=development npm run typeorm -- migration:generate libs/@anvix/server-core/database/migrations/$npm_config_name",
+  "migration:run": "cross-env NODE_ENV=development npm run typeorm -- migration:run",
+  "migration:revert": "cross-env NODE_ENV=development npm run typeorm -- migration:revert",
+  "migration:show": "cross-env NODE_ENV=development npm run typeorm -- migration:show"
+}
+```
+
+## Important Build Note
+
+`npm run build` currently runs `migration:run` after compiling:
+
+```json
+"build": "cross-env NODE_ENV=development npm run prebuild && nest build && npm run migration:run"
+```
+
+Use this carefully. Running `npm run build` may apply pending migrations to the configured development database.
+
+## Initial Setup
+
+For a fresh local database:
 
 ```bash
-npm run build
 npm run migration:run
 ```
 
-This creates all tables and initial schema.
+This applies pending migrations using the configured TypeORM data source.
 
-### When You Modify Entities
+## Generate A Migration From Entity Changes
 
-1. **Make changes to your `.entity.ts` files** (add/remove columns, change types, etc.)
-
-2. **Generate migration from changes:**
-
-```bash
-npm run migration:generate <MigrationName>
-```
-
-Example: `npm run migration:generate --name=add-user-email-index`
-
-3. **Review the generated migration file** in the appropriate subfolder under `libs/@oc/server-core/database/migrations/`
-
-4. **Run the migration:**
+1. Update the relevant `.entity.ts` file.
+2. Generate a migration with a descriptive name:
 
 ```bash
-npm run migration:run
+npm run migration:generate --name=database-changes/AddUserBioColumn
 ```
 
-### Other Useful Commands
+This uses the current script and writes under:
 
-- **Check migration status:**
+```text
+libs/@anvix/server-core/database/migrations/database-changes/
+```
+
+The `--name` value is important because the script appends it to `libs/@anvix/server-core/database/migrations/`.
+
+For seeders, use:
 
 ```bash
-npm run migration:show
+npm run migration:generate --name=seeders/SeedDefaultRoles
 ```
 
-- **Revert last migration (if needed):**
+Use generated seeders only when TypeORM can detect the data change. For most seed data, creating a manual migration through the TypeORM CLI is usually clearer.
+
+## Create A Manual Migration
+
+There is no dedicated `migration:create:*` npm script in the current project. Use the TypeORM script directly:
 
 ```bash
-npm run migration:revert
+npm run typeorm -- migration:create libs/@anvix/server-core/database/migrations/database-changes/CreateCustomTable
 ```
 
-## Workflow Summary
-
-| Scenario             | Command                                    | Description                    |
-| -------------------- | ------------------------------------------ | ------------------------------ |
-| First time setup     | `npm run build && npm run migration:run`   | Create initial database schema |
-| After entity changes | `npm run migration:generate --name=<Name>` | Generate migration file        |
-| Apply migrations     | `npm run migration:run`                    | Execute pending migrations     |
-| Check status         | `npm run migration:show`                   | See which migrations ran       |
-| Undo last change     | `npm run migration:revert`                 | Rollback last migration        |
-
-## Examples
-
-### 1. `migration:create:*` - Create Empty Migration
-
-Use this when you need to write custom migration logic manually. Use the appropriate script for your migration type:
+For a seeder:
 
 ```bash
-# Database changes migration
-npm run migration:create:db-changes --name=CreateCustomTable
-
-# Function migration
-npm run migration:create:functions --name=CreateCustomFunction
-
-# Seed migration
-npm run migration:create:seeds --name=SeedReferenceData
+npm run typeorm -- migration:create libs/@anvix/server-core/database/migrations/seeders/SeedReferenceData
 ```
 
-This creates an empty migration file:
+Example manual migration:
 
 ```typescript
+import { MigrationInterface, QueryRunner, Table } from 'typeorm';
+
 export class CreateCustomTable1761918377690 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
-        // Your custom migration logic here
         await queryRunner.createTable(
             new Table({
-                name: "custom_table",
+                name: 'custom_table',
                 columns: [
                     {
-                        name: "id",
-                        type: "int",
-                        isPrimary: true,
-                        isGenerated: true,
-                        generationStrategy: "increment"
+                        name: 'id',
+                        type: 'uuid',
+                        isPrimary: true
                     },
                     {
-                        name: "name",
-                        type: "varchar",
-                        length: "100"
+                        name: 'name',
+                        type: 'varchar',
+                        length: '100'
                     }
                 ]
             })
@@ -125,110 +135,65 @@ export class CreateCustomTable1761918377690 implements MigrationInterface {
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.dropTable("custom_table");
+        await queryRunner.dropTable('custom_table');
     }
 }
 ```
 
-### 2. `migration:generate` - Generate from Entity Changes
-
-Use this when you've modified entity files:
-
-```typescript
-// Add to user.entity.ts
-@Column("text", { name: "bio", nullable: true })
-bio: string | null;
-```
-
-```bash
-npm run migration:generate --name=add-user-bio-column
-# OR for older npm versions:
-npm run migration:generate -- --name=add-user-bio-column
-```
-
-Generated migration:
-
-```typescript
-export class AddUserBioColumn1761918377690 implements MigrationInterface {
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`
-            ALTER TABLE "user"
-            ADD "bio" text
-        `);
-    }
-
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`
-            ALTER TABLE "user"
-            DROP COLUMN "bio"
-        `);
-    }
-}
-```
-
-### 3. `migration:run` - Apply Pending Migrations
-
-Use this to execute all pending migrations:
+## Apply Pending Migrations
 
 ```bash
 npm run migration:run
 ```
 
-Output example:
-
-```
-1 migrations are new migrations must be executed.
-Migration AddUserBioColumn1761918377690 has been executed successfully.
-```
-
-### 4. `migration:revert` - Undo Last Migration
-
-Use this to rollback the most recent migration:
+## Revert Last Migration
 
 ```bash
 npm run migration:revert
 ```
 
-Output example:
+This reverts only the most recently applied migration.
 
-```
-Migration AddUserBioColumn1761918377690 has been reverted successfully.
-```
-
-### 5. `migration:show` - Check Migration Status
-
-Use this to see which migrations have been applied:
+## Check Migration Status
 
 ```bash
 npm run migration:show
 ```
 
-Output example:
+## Workflow Summary
 
-```
-[ ] 1761918377690-InitialSetup
-[X] 1761918377691-AddUserBioColumn
-```
+| Scenario | Command | Notes |
+| --- | --- | --- |
+| Apply migrations | `npm run migration:run` | Runs pending migrations |
+| Generate schema migration | `npm run migration:generate --name=database-changes/<Name>` | Use after entity changes |
+| Generate seeder migration | `npm run migration:generate --name=seeders/<Name>` | Only if TypeORM can detect needed change |
+| Create manual schema migration | `npm run typeorm -- migration:create libs/@anvix/server-core/database/migrations/database-changes/<Name>` | Use for custom SQL/schema work |
+| Create manual seeder | `npm run typeorm -- migration:create libs/@anvix/server-core/database/migrations/seeders/<Name>` | Use for seed data |
+| Revert last migration | `npm run migration:revert` | Rollback one migration |
+| Show migration status | `npm run migration:show` | See pending/applied migrations |
 
 ## Important Notes
 
-- Always build the project (`npm run build`) before running migration commands
-- Review generated migration files before running them
-- Never modify migration files manually after they've been run in production
-- Use descriptive migration names (e.g., `AddUserProfileFields`, `CreateAuditLogTable`)
-- Migration files are stored in organized subfolders under `libs/@oc/server-core/database/migrations/`
-- The data source is configured to recursively scan all subfolders for migration files
+- Review generated migrations before running them.
+- Never edit a migration file after it has been applied in a shared or production environment.
+- Use descriptive migration names such as `AddUserProfileFields` or `SeedProductOwner`.
+- Keep schema changes under `database-changes/`.
+- Keep seed data under `seeders/`.
+- Avoid importing application services into migrations. Migrations should use `QueryRunner` and database-safe logic.
+- Prefer relative imports inside migration files when importing project entities or enums, because migrations may run outside normal Nest bootstrap.
 
 ## Troubleshooting
 
 If you get "Cannot find module" errors:
 
-1. Run `npm run build` first
-2. Ensure entity imports use relative paths (not `@core-enums` aliases)
-3. Check that your database connection is working
+1. Confirm dependencies are installed.
+2. Confirm `tsconfig-paths/register` is being loaded through the `typeorm` script.
+3. Check that migration imports are valid from the migration file location.
 
-If migrations don't appear in database:
+If migrations do not appear:
 
-1. Ensure migration files are in the correct subfolder under `libs/@oc/server-core/database/migrations/`
-2. Check that the data source configuration includes the `**` glob pattern for subfolders
-3. Verify database connection settings in `config/env/development.env`
+1. Confirm the migration file is under `libs/@anvix/server-core/database/migrations/`.
+2. Confirm it is exported as a TypeORM migration class.
+3. Check `libs/@anvix/server-core/database/data-source.ts` migration glob configuration.
+4. Verify database connection settings in `config/env/development.env`.
+

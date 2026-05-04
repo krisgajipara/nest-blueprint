@@ -46,10 +46,8 @@ async function reviewChanges() {
             return fs.existsSync(fullPath) ? fs.readFileSync(fullPath, "utf-8") : "Standards not found.";
         };
 
-        const archRules = getFile(
-            "../libs/@oc/documents/dev-guidelines/coding-standards-rule/architecture-validation-rule-v2.md"
-        );
-        const codeRules = getFile("../libs/@oc/documents/dev-guidelines/coding-standards-rule/coding-standards-v2.md");
+        const archRules = getFile("../libs/@anvix/documents/dev-guidelines/architecture-validation-rule-v2.md");
+        const codeRules = getFile("../libs/@anvix/documents/dev-guidelines/coding-standards-v2.md");
 
         // Keeping your EXACT prompt structure
         const prompt = `

@@ -1,8 +1,8 @@
 import { AppResponse } from "@business-core-dto";
 import { applyDecorators, HttpStatus } from "@nestjs/common";
 import { ApiExtraModels, ApiOperation, ApiResponse, getSchemaPath } from "@nestjs/swagger";
-import { InternalServerErrorResponseDto } from "libs/@oc/business-core/dto/common-dto/error/internal-server-error.response.dto";
-import { UnauthorizedResponseDto } from "libs/@oc/business-core/dto/common-dto/error/unauthorized.response.dto";
+import { InternalServerErrorResponseDto } from "libs/@anvix/business-core/dto/common-dto/error/internal-server-error.response.dto";
+import { UnauthorizedResponseDto } from "libs/@anvix/business-core/dto/common-dto/error/unauthorized.response.dto";
 
 export function ApiResponseStatus(
     description: string,

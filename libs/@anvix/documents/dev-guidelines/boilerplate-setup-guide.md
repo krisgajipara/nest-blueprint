@@ -1,493 +1,348 @@
 # NestJS Boilerplate Setup Guide
 
-**Version:** 1.0  
-**Last Updated:** 2026-01-06
+This guide explains how to create or update backend modules using the current Anvix architecture.
 
----
+Last verified against repo: 2026-05-04
 
-## Overview
+Use these documents together:
 
-This boilerplate demonstrates a **production-ready NestJS application architecture** following enterprise-grade coding standards. The User module serves as the reference implementation showcasing all architectural patterns and best practices.
+- `libs/@anvix/documents/folder-architecture.md`
+- `libs/@anvix/documents/TENANT_GUIDE.md`
+- `libs/@anvix/documents/migrations.md`
+- `libs/@anvix/documents/dev-guidelines/coding-standards-v2.md`
+- `libs/@anvix/documents/dev-guidelines/architecture-validation-rule-v2.md`
 
-### Key Features
+## Architecture
 
-✅ **Clean Architecture** - Strict separation of concerns (Controller → Service → Repository)  
-✅ **Type Safety** - Full TypeScript type coverage with zero `any` types  
-✅ **Custom Validation** - No class-validator dependencies, custom validators for consistency  
-✅ **DTO Standards** - Response mapping in constructors, proper encapsulation  
-✅ **Path Aliases** - No relative imports, clean tsConfig path aliases throughout  
-✅ **Error Handling** - Standardized error messages with i18n support  
-✅ **Swagger Documentation** - Complete API documentation out of the box  
-✅ **Caching** - Built-in Redis caching with automatic cache invalidation  
-✅ **Security** - UUID validation, authentication guards, permission system ready
+```text
+src/modules/{module}/                         # API/presentation layer
+|-- {module}.controller.ts                     # HTTP routes only
+`-- {module}.module.ts                         # Nest module wiring
 
----
+libs/@anvix/business-core/modules/{module}/    # Business/domain layer
+|-- dto/
+|   |-- request/                               # Request DTOs
+|   `-- response/                              # Response DTOs
+|-- {module}.repository.ts                     # Data access
+|-- {module}.service.ts                        # Business logic
+`-- index.ts                                   # Public exports
 
-## Architecture Patterns
-
-### Module Structure
-
-```
-src/modules/{module}/          # API Layer
-├── {module}.controller.ts      # HTTP endpoints only
-└── {module}.module.ts          # NestJS module definition
-
-libs/@oc/business-core/modules/{module}/  # Business Logic Layer
-├── dto/
-│   ├── request/                # Input validation DTOs
-│   └── response/               # Output transformation DTOs
-├── {module}.service.ts         # Business logic orchestration
-└── {module}.repository.ts      # Data access layer
-
-libs/@oc/server-core/database/
-├── entities/                   # TypeORM entities
-└── migrations/                 # Database migrations
+libs/@anvix/server-core/database/
+|-- entities/                                  # TypeORM entities
+`-- migrations/
+    |-- database-changes/                      # Schema migrations
+    `-- seeders/                               # Seed data migrations
 ```
 
-### Layer Responsibilities
+## Layer Responsibilities
 
-#### 1. **Controller Layer**
-- Handle HTTP requests/responses
-- Validate input using DTOs
-- Call service methods
-- Return responses
-- **NO business logic**
-- **NO DTO instantiation**
+### Controller Layer
+
+Controllers:
+
+- define routes
+- receive request DTOs
+- apply guards and permissions
+- define Swagger metadata
+- call service methods
+- return service responses
+
+Controllers must not:
+
+- contain business logic
+- build database queries
+- instantiate response DTOs
+- perform complex data mapping
+
+### Service Layer
+
+Services:
+
+- contain business rules
+- orchestrate repositories and shared services
+- return `AppResponse` for API-facing methods where that is the module pattern
+- expose internal methods for cross-module service-to-service use when needed
+- manage transactions for multi-step writes when needed
+
+### Repository Layer
+
+Repositories:
+
+- perform database access
+- use QueryBuilder for complex reads
+- select only fields needed by the use case
+- use semantic method names
+- extend `TenantAwareRepository<T>` for tenant-owned entities
+
+### DTO Layer
+
+DTOs:
+
+- validate request input
+- shape response output
+- keep response mapping explicit
+- avoid leaking sensitive entity fields
+- include Swagger metadata
+
+## New Module Workflow
+
+Use this order for a new module:
+
+1. Define the entity in `libs/@anvix/server-core/database/entities`.
+2. Export the entity from `entities/index.ts` if it needs alias imports.
+3. Add constants/enums if needed.
+4. Add request DTOs under `libs/@anvix/business-core/modules/{module}/dto/request`.
+5. Add response DTOs under `libs/@anvix/business-core/modules/{module}/dto/response`.
+6. Add the repository under `libs/@anvix/business-core/modules/{module}`.
+7. Add the service under `libs/@anvix/business-core/modules/{module}`.
+8. Add controller and module files under `src/modules/{module}`.
+9. Wire module imports/exports.
+10. Add permissions to `permissions.constant.ts` if the module is protected by permissions.
+11. Generate or create migrations.
+12. Update docs when folder structure, APIs, tenant behavior, or migration behavior changes.
+13. Run build/lint/tests where practical.
+
+## Example Folder Shape
+
+```text
+src/modules/booking/
+|-- booking.controller.ts
+`-- booking.module.ts
+
+libs/@anvix/business-core/modules/booking/
+|-- dto/
+|   |-- request/
+|   |   |-- create-booking.request.dto.ts
+|   |   |-- list-booking.request.dto.ts
+|   |   `-- update-booking.request.dto.ts
+|   `-- response/
+|       `-- booking.response.dto.ts
+|-- booking.repository.ts
+|-- booking.service.ts
+`-- index.ts
+
+libs/@anvix/server-core/database/entities/
+`-- booking.entity.ts
+```
+
+## Entity Checklist
+
+- [ ] Entity is in `libs/@anvix/server-core/database/entities`.
+- [ ] Tenant-owned entity extends `BaseTenantModifiableEntity` or `BaseTenantModifiableEntityWithoutIdentity`.
+- [ ] System-wide entity extends `BaseSystemModifiableEntity` or another non-tenant base entity.
+- [ ] UUID primary key is used unless a custom key is required.
+- [ ] String lengths use constants from `@core-constants` where available.
+- [ ] Unique constraints use shared names such as `DatabaseUniqueKey`.
+- [ ] Relationships define join columns where needed.
+- [ ] Entity is exported from `entities/index.ts` if imported through `@core-database`.
+
+Example:
 
 ```typescript
-// ✅ Good - Delegates to service
-async findAll(@Query() query: ListUserRequestDto): Promise<AppResponse<CommonSearchResponseDto<UserResponseDto>>> {
-    return this.userService.findList(query);
-}
+import { BookingEntityConstant } from '@core-constants';
+import { Column, Entity } from 'typeorm';
+import { BaseTenantModifiableEntity } from '../base-entities/base-tenant-modifiable-entity';
 
-// ❌ Bad - Business logic in controller
-async findAll(@Query() query: ListUserRequestDto) {
-    const users = await this.userService.findList(query);
-    if (users.data.length === 0) {
-        throw new NotFoundException();  // Wrong layer!
-    }
-    return users;
-}
-```
-
-#### 2. **Service Layer**
-- Contains all business logic
-- Orchestrates repositories and other services
-- Returns `AppResponse` objects
-- Provides internal methods for cross-module communication
-- **Strongly typed** - no `any` types
-
-```typescript
-// ✅ Good - Type safe and returns AppResponse
-async create(createUserData: CreateUserRequestDto): Promise<AppResponse<UserResponseDto>> {
-    const existingUser = await this.userRepository.findByEmail(createUserData.email);
-    if (existingUser) {
-        throw new BadRequestException({ message: "ERR_EMAIL_EXISTS" });
-    }
-    const user = this.userRepository.create({ ...createUserData, status: UserStatus.ACTIVE });
-    const savedUser = await this.userRepository.save(user);
-    return new AppResponse(SuccessConstant.AddSuccessAction, new UserResponseDto(savedUser), {
-        module: MapToModuleName(ModuleName.USER)
-    });
-}
-
-// Internal method for other services (returns raw entity)
-async findUserByEmail(email: string, userType?: UserTypeEnum): Promise<User | null> {
-    return this.userRepository.findByEmail(email, userType);
-}
-```
-
-#### 3. **Repository Layer**
-- Direct database access
-- Complex queries using QueryBuilder
-- **Selective field returns** - never return all columns
-- Semantic method names
-
-```typescript
-// ✅ Good - Selective fields
-async findById(id: string): Promise<User | null> {
-    return this.createQueryBuilder("user")
-        .select([
-            "user.id",
-            "user.firstName",
-            "user.lastName",
-            "user.email",
-            // ... only needed fields
-        ])
-        .where("user.id = :id", { id })
-        .getOne();
-}
-```
-
-#### 4. **DTO Layer**
-- Request DTOs: Input validation
-- Response DTOs: Output transformation
-- **All mapping logic in DTO constructors**
-- Use custom validators from `@core-custom-validators`
-
-```typescript
-// ✅ Good - Mapping in constructor
-export class UserResponseDto {
-    constructor(user: User) {
-        this.id = user.id;
-        this.firstName = user.firstName;
-        this.lastName = user.lastName;
-        // ... explicit field mapping
-        // Password/salt intentionally excluded
-    }
-}
-```
-
----
-
-## Using This Boilerplate
-
-### 1. Creating a New Module
-
-Follow the User module pattern:
-
-```bash
-# 1. Create API module structure
-src/modules/product/
-├── product.controller.ts
-└── product.module.ts
-
-# 2. Create business logic structure
-libs/@oc/business-core/modules/product/
-├── dto/
-│   ├── request/
-│   │   ├── create-product.request.dto.ts
-│   │   ├── update-product.request.dto.ts
-│   │   └── list-product.request.dto.ts
-│   ├── response/
-│   │   └── product.response.dto.ts
-│   └── index.ts
-├── product.service.ts
-├── product.repository.ts
-└── index.ts
-
-# 3. Create database entity
-libs/@oc/server-core/database/entities/
-└── product.entity.ts
-```
-
-### 2. Module Checklist
-
-When creating a new module, ensure:
-
-**Entity:**
-- [ ] Extends `BaseModifiableEntity` or `BaseModifiableEntityWithoutIdentity`
-- [ ] Uses `@PrimaryGeneratedColumn('uuid')`
-- [ ] Uses constants for field lengths (from `@core-constants`)
-- [ ] Uses `DatabaseUniqueKey` enum for unique constraints
-- [ ] Includes relationships with `cascade: true`
-
-**Repository:**
-- [ ] Extends `Repository<T>` with proper constructor
-- [ ] Uses `@Injectable()` decorator
-- [ ] All methods return selective fields (use `.select()`)
-- [ ] Complex queries use QueryBuilder
-- [ ] Uses enums instead of hardcoded strings
-
-**Service:**
-- [ ] Uses `@Injectable()` decorator
-- [ ] All parameters strongly typed (no `any`)
-- [ ] Returns `AppResponse` for API methods
-- [ ] Provides internal methods for cross-module use
-- [ ] Uses `Logger` with `GenerateLogPrefix`
-- [ ] Implements caching where appropriate
-
-**Controller:**
-- [ ] Uses proper HTTP decorators (`@Get`, `@Post`, `@Put`, `@Delete`)
-- [ ] All routes documented with Swagger decorators
-- [ ] Uses `@ApiResponseStatus` with 4th parameter (Response DTO)
-- [ ] Uses `ParseUUIDPipe` for UUID parameters
-- [ ] Uses `@UseGuards(JwtAuthGuard)` and `@ApiBearerAuth()`
-- [ ] Strongly typed return types
-
-**DTOs:**
-- [ ] Request DTOs use custom validators only
-- [ ] Response DTOs map in constructor
-- [ ] All exports through `index.ts`
-- [ ] Nested objects use private DTO classes
-- [ ] Swagger decorators on all properties
-
-**Module Definition:**
-- [ ] Exports **only** the Service (never Repository)
-- [ ] Imports required modules
-- [ ] Registers entities via `TypeOrmModule.forFeature([])`
-
----
-
-## Validation Standards
-
-### Custom Validators
-
-**Always use custom validators from `@core-custom-validators`:**
-
-```typescript
-// ❌ WRONG - class-validator
-import { IsString, IsEmail, IsUUID } from 'class-validator';
-
-@IsString()
-@IsEmail()
-firstName: string;
-
-// ✅ CORRECT - custom validators
-import { ValidateType, ValidateEmail, ValidateNotEmpty } from '@core-custom-validators';
-import { FieldTypeEnum } from '@core-enums';
-
-@ValidateNotEmpty({ constraints: { field: 'First name' } })
-@ValidateType({ constraints: { field: 'firstName', type: FieldTypeEnum.String } })
-firstName: string;
-
-@ValidateEmail({ constraints: { field: 'Email' } })
-email: string;
-```
-
-### Available Custom Validators
-
-- `@ValidateType()` - Type validation (String, Number, UUID, Date, etc.)
-- `@ValidateNotEmpty()` - Required field validation
-- `@ValidateOptional()` - Optional field marker
-- `@ValidateEmail()` - Email format validation
-- `@ValidateMinLength()` / `@ValidateMaxLength()` - String length
-- `@ValidateMinValue()` / `@ValidateMaxValue()` - Number range
-- `@ValidateEnumType()` - Enum validation
-- `@ValidateFileType()` / `@ValidateFileSize()` - File validation
-- `@ValidateAlphaNumeric()` - Alphanumeric validation
-- `@ValidateUniqueArrayItem()` - Array uniqueness
-
----
-
-## Import Standards
-
-**ALWAYS use tsConfig path aliases:**
-
-```typescript
-// ❌ WRONG - Relative imports
-import { User } from '../../../server-core/database/entities/user.entity';
-import { CreateUserDto } from '../../dto/request/create-user.dto';
-
-// ✅ CORRECT - Path aliases
-import { User } from '@core-database';
-import { CreateUserRequestDto } from '@business-core-modules';
-```
-
-### Available Path Aliases
-
-| Alias | Path | Usage |
-|-------|------|-------|
-| `@business-core-dto` | `libs/@oc/business-core/dto` | Common DTOs |
-| `@business-core-modules` | `libs/@oc/business-core/modules` | Business modules |
-| `@core-database` | `libs/@oc/server-core/database` | Entities, migrations |
-| `@core-enums` | `libs/@oc/server-core/enums` | Enums |
-| `@core-constants` | `libs/@oc/server-core/constants` | Constants |
-| `@core-utilities` | `libs/@oc/server-core/utilities` | Utility functions |
-| `@core-custom-validators` | `libs/@oc/server-core/custom-validators` | Validators |
-| `@core-custom-decorators` | `libs/@oc/server-core/custom-decorators` | Decorators |
-| `@core-custom-guards` | `libs/@oc/server-core/custom-guards` | Guards |
-| `@core-shared-modules` | `libs/@oc/server-core/shared-modules` | Shared modules |
-
----
-
-## Response Standards
-
-### AppResponse Structure
-
-```typescript
-// Service returns AppResponse
-return new AppResponse(
-    SuccessConstant.AddSuccessAction,  // Message constant
-    new UserResponseDto(savedUser),     // Data (DTO instance)
-    { module: MapToModuleName(ModuleName.USER) }  // Context
-);
-```
-
-### Success Messages
-
-```typescript
-// Specific actions
-SuccessConstant.AddSuccessAction      // "User has been added successfully"
-SuccessConstant.UpdateSuccessAction   // "User has been updated successfully"
-SuccessConstant.RemoveSuccessAction   // "User has been removed successfully"
-SuccessConstant.DetailFetch           // "User details fetched successfully"
-SuccessConstant.ListFetch             // "User list fetched successfully"
-
-// Generic action
-SuccessConstant.SuccessAction         // Use with { module: 'Entity', action: 'verb' }
-```
-
-### List Endpoints
-
-**Always return `CommonSearchResponseDto`:**
-
-```typescript
-async findList(searchRequest: ListUserRequestDto): Promise<AppResponse<CommonSearchResponseDto<UserResponseDto>>> {
-    const [users, total] = await this.userRepository.findUsers(searchRequest);
-    
-    const userDtos = users.map(user => new UserResponseDto(user));
-    
-    const response = new CommonSearchResponseDto(
-        userDtos,
-        searchRequest.pageSize || 10,
-        searchRequest.pageNumber || 1,
-        total
-    );
-    
-    return new AppResponse(SuccessConstant.ListFetch, response, { 
-        module: MapToModuleName(ModuleName.USER) 
-    });
-}
-```
-
-**Swagger Documentation:**
-```typescript
-@ApiResponseStatus(
-    "List all users with pagination, search, and filters",
-    [HttpStatus.OK, HttpStatus.BAD_REQUEST],
-    USER_MODULE_NAME,
-    CommonSearchResponseDto,      // 4th parameter
-    UserResponseDto               // 5th parameter (generic type)
-)
-```
-
----
-
-## Database Standards
-
-### Entity Definition
-
-```typescript
-@Entity("user")
-@Unique(DatabaseUniqueKey.UserEmailUserType, ["email", "userType", "deletedAt"])
-export class User extends BaseModifiableEntityWithoutIdentity {
-    @PrimaryGeneratedColumn("uuid")
-    id: string;
-
+@Entity('booking')
+export class Booking extends BaseTenantModifiableEntity {
     @Column({
-        type: "varchar",
-        length: UserEntityConstant.FirstNameMaxLength,
-        name: "first_name",
+        type: 'varchar',
+        length: BookingEntityConstant.TitleMaxLength,
+        name: 'title',
         nullable: false
     })
-    firstName: string;
-
-    @Column({
-        type: "enum",
-        enum: UserStatus,
-        name: "status",
-        nullable: false,
-        default: UserStatus.ACTIVE
-    })
-    status: UserStatus;
+    title: string;
 }
 ```
 
-### Migration Naming
+## Repository Checklist
 
-```
-database-changes/     # Schema changes
-├── 1700000000000-initial-setup.ts
-└── 1700000000001-add-user-role.ts
+- [ ] Tenant-owned repository extends `TenantAwareRepository<T>`.
+- [ ] Tenant-owned repository uses `@Injectable({ scope: Scope.REQUEST })`.
+- [ ] Repository injects `RequestContextService` from `@core-shared-modules`.
+- [ ] Repository methods return selective fields.
+- [ ] Sort fields are whitelisted.
+- [ ] Raw SQL manually filters by `tenant_id`.
+- [ ] Repository does not call services.
 
-seeds/               # Data seeds
-└── 1700000002000-SEED-super-admin-user.ts
-
-functions/           # Database functions
-└── 1700000001001-FUNCTION-add-dashboard-kpis.ts
-```
-
----
-
-## Error Handling
-
-### Standard Error Keys
+Example:
 
 ```typescript
-// Use standardized error keys from error.json
-throw new BadRequestException({ 
-    message: "ERR_EMAIL_EXISTS" 
-});
+import { Booking, TenantAwareRepository } from '@core-database';
+import { RequestContextService } from '@core-shared-modules';
+import { Inject, Injectable, Scope } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-throw new NotFoundException({ 
-    message: "ERR_MODULE_NOT_FOUND", 
-    module: MapToModuleName(ModuleName.USER) 
-});
+@Injectable({ scope: Scope.REQUEST })
+export class BookingRepository extends TenantAwareRepository<Booking> {
+    constructor(
+        @InjectRepository(Booking)
+        repository: Repository<Booking>,
+        @Inject() requestContextService: RequestContextService
+    ) {
+        super(repository.target, repository.manager, repository.queryRunner, requestContextService);
+    }
+}
 ```
 
-**Available Error Keys:**
-- `ERR_MODULE_NOT_FOUND`
-- `ERR_EMAIL_EXISTS`
-- `ERR_MIN_LENGTH`
-- `ERR_MAX_LENGTH`
-- `ERR_REQUIRED`
-- `ERR_TYPE`
-- `ERR_IS_ENUM`
-- `ERR_DELETED`
-- `ERR_NOT_VALID`
-- `ERR_ALPHA_NUMERIC`
-- `ERR_UNIQUE_ARRAY_ITEM`
-- `ERR_ONLY_SPACE`
-- `ERR_MIN_VALUE`
-- `ERR_MAX_VALUE`
+## Service Checklist
 
----
+- [ ] Service is injectable.
+- [ ] Service contains business rules.
+- [ ] Service depends on repositories and shared services.
+- [ ] API-facing methods return typed `AppResponse`.
+- [ ] Internal methods return raw data only when used by other services.
+- [ ] Error keys come from standard translation keys.
+- [ ] Multi-step writes use transactions when needed.
 
-## Testing Your Module
+## Controller Checklist
 
-### Compilation Check
+- [ ] Controller uses RESTful routes.
+- [ ] Protected controller/routes use the correct guard.
+- [ ] Protected routes use `@ApiBearerAuth()`.
+- [ ] Permission-protected routes use `@RequirePermissions()`.
+- [ ] UUID route params use `ParseUUIDPipe`.
+- [ ] Request body/query uses DTOs.
+- [ ] Responses use `ApiResponseStatus`.
+- [ ] Controller delegates to service without business logic.
+
+## DTO Checklist
+
+- [ ] Request DTOs use custom validators from `@core-custom-validators`.
+- [ ] Request DTOs include Swagger property decorators.
+- [ ] Response DTOs map fields explicitly.
+- [ ] Response DTOs exclude sensitive fields.
+- [ ] Nested response objects use DTO classes where useful.
+- [ ] DTOs are exported through local `index.ts` files.
+
+## Import Aliases
+
+Use aliases from `tsconfig.json` for cross-package imports:
+
+```text
+@business-core-dto
+@business-core-modules
+@core-config
+@core-constants
+@core-custom-decorators
+@core-custom-guards
+@core-custom-validators
+@core-database
+@core-enums
+@core-filters
+@core-generic-services
+@core-interceptors
+@core-interfaces
+@core-middleware
+@core-shared-modules
+@core-utilities
+```
+
+Relative imports are acceptable for nearby files that are not exported through an alias barrel. Current entity base classes are imported relatively from `../base-entities/...`.
+
+## List Endpoint Pattern
+
+Repository:
+
+```typescript
+async findBookings(request: ListBookingRequestDto): Promise<[Booking[], number]> {
+    const qb = this.createQueryBuilder('booking').select([
+        'booking.id',
+        'booking.title',
+        'booking.createdAt'
+    ]);
+
+    const SORT_MAP: Record<string, string> = {
+        title: 'booking.title',
+        createdAt: 'booking.createdAt'
+    };
+
+    const orderByField = SORT_MAP[request.sortBy] ?? 'booking.createdAt';
+    qb.orderBy(orderByField, request.sortDirection);
+
+    return qb.getManyAndCount();
+}
+```
+
+Service:
+
+```typescript
+async findList(request: ListBookingRequestDto): Promise<AppResponse<CommonSearchResponseDto<BookingResponseDto>>> {
+    const [bookings, total] = await this.bookingRepository.findBookings(request);
+    const data = bookings.map((booking) => new BookingResponseDto(booking));
+    const response = new CommonSearchResponseDto(data, request.pageSize, request.pageNumber, total);
+
+    return new AppResponse(SuccessConstant.SuccessAction, { data: response }, {
+        module: 'Booking',
+        action: 'fetched'
+    });
+}
+```
+
+## Migration Workflow
+
+Schema migrations go under:
+
+```text
+libs/@anvix/server-core/database/migrations/database-changes/
+```
+
+Seeders go under:
+
+```text
+libs/@anvix/server-core/database/migrations/seeders/
+```
+
+Generate schema migration:
+
 ```bash
-npm run build
+npm run migration:generate --name=database-changes/AddBookingTable
 ```
 
-### Run Validation Audit
-Use the validation standards from `architecture-validation-rule-v2.md` and `coding-standards-v2.md` to check:
+Create manual schema migration:
 
-1. ✅ Module boundaries (only Service exported)
-2. ✅ DTO standards (custom validators, constructor mapping)
-3. ✅ Type safety (no `any` types)
-4. ✅ Import paths (tsConfig aliases only)
-5. ✅ Response structure (AppResponse with DTOs)
-6. ✅ Error handling (standard error keys)
+```bash
+npm run typeorm -- migration:create libs/@anvix/server-core/database/migrations/database-changes/CreateBookingTable
+```
 
----
+Apply migrations:
 
-## Quick Reference: Do's and Don'ts
+```bash
+npm run migration:run
+```
 
-### ✅ DO
+See `libs/@anvix/documents/migrations.md` for the full migration guide.
 
-- Use custom validators from `@core-custom-validators`
-- Map all data in Response DTO constructors
-- Export only Services from modules
-- Use `AppResponse` for all service methods
-- Use path aliases for all imports
-- Return selective fields from repositories
-- Use `ParseUUIDPipe` for UUID parameters
-- Document all endpoints with Swagger
-- Use constants for field lengths and messages
-- Provide internal methods for cross-module communication
+## Validation
 
-### ❌ DON'T
+Before finishing a module:
 
-- Use class-validator type decorators (`@IsString`, `@IsUUID`, etc.)
-- Use `any` type anywhere
-- Export Repositories from modules
-- Use relative imports (`../../`)
-- Return all entity fields from repositories
-- Put business logic in controllers
-- Transform data in services (belongs in DTOs)
-- Use hardcoded strings for error messages
-- Instantiate DTOs in controllers
-- Use `Object.assign()` in DTO constructors
+- [ ] Review `coding-standards-v2.md`.
+- [ ] Review `architecture-validation-rule-v2.md`.
+- [ ] Run `npm run build` when a database connection is available and applying migrations is intended.
+- [ ] Run `npm run lint` where practical.
+- [ ] Update `folder-architecture.md` when structure changes.
+- [ ] Update API/docs when public behavior changes.
 
----
+## Do
 
-## Next Steps
+- Use custom validators.
+- Use request and response DTOs.
+- Keep controllers thin.
+- Keep business logic in services.
+- Keep database access in repositories.
+- Use tenant-aware repositories for tenant-owned data.
+- Use path aliases for cross-package imports.
+- Use constants/enums instead of magic strings.
+- Add migrations for schema changes.
 
-1. **Study the User Module** - Review all files to understand patterns
-2. **Create Your First Module** - Follow the checklist above
-3. **Run Validation** - Use the validation rules to check compliance
-4. **Iterate** - Refine based on feedback
+## Do Not
 
-Happy coding! 🚀
+- Put business logic in controllers.
+- Return raw entities from controllers.
+- Inject repositories across module boundaries.
+- Use direct TypeORM repositories in services for tenant-owned entities.
+- Use raw SQL without tenant filtering.
+- Add duplicate standards documents.
+- Use old migration folder names unless those folders/scripts are actually added.
