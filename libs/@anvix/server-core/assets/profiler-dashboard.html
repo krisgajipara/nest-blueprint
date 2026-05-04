@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Oneclick Boilerplate | API Profiler</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --bg: #05060a;
+                --card-bg: rgba(255, 255, 255, 0.03);
+                --border: rgba(255, 255, 255, 0.1);
+                --cyan: #00f2ff;
+                --magenta: #ff00cc;
+                --yellow: #fbff00;
+                --text: #e0e0e0;
+                --text-dim: #a0a0a0;
+                --success: #00ffa3;
+                --error: #ff3366;
+                --warning: #ffcc00;
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                background-color: var(--bg);
+                color: var(--text);
+                font-family: "Outfit", sans-serif;
+                overflow-x: hidden;
+                background-image:
+                    radial-gradient(circle at 20% 30%, rgba(0, 242, 255, 0.05) 0%, transparent 40%),
+                    radial-gradient(circle at 80% 70%, rgba(255, 0, 204, 0.05) 0%, transparent 40%);
+                min-height: 100vh;
+            }
+
+            .container {
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 2rem;
+            }
+
+            header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 3rem;
+                padding-bottom: 1rem;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .logo {
+                font-size: 1.5rem;
+                font-weight: 800;
+                letter-spacing: -1px;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .logo span {
+                color: var(--cyan);
+                text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+            }
+
+            .status-badge {
+                padding: 0.5rem 1rem;
+                border-radius: 20px;
+                background: rgba(0, 255, 163, 0.1);
+                color: var(--success);
+                font-size: 0.8rem;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                border: 1px solid rgba(0, 255, 163, 0.2);
+            }
+
+            .status-dot {
+                width: 8px;
+                height: 8px;
+                background: var(--success);
+                border-radius: 50%;
+                box-shadow: 0 0 10px var(--success);
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0% {
+                    opacity: 1;
+                }
+
+                50% {
+                    opacity: 0.5;
+                }
+
+                100% {
+                    opacity: 1;
+                }
+            }
+
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 1.5rem;
+                margin-bottom: 3rem;
+            }
+
+            .stat-card {
+                background: var(--card-bg);
+                backdrop-filter: blur(10px);
+                border: 1px solid var(--border);
+                padding: 1.5rem;
+                border-radius: 16px;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .stat-card:hover {
+                border-color: var(--cyan);
+                transform: translateY(-5px);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            }
+
+            .stat-card::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 2px;
+                background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+
+            .stat-card:hover::before {
+                opacity: 1;
+            }
+
+            .stat-label {
+                font-size: 0.9rem;
+                color: var(--text-dim);
+                margin-bottom: 0.5rem;
+            }
+
+            .stat-value {
+                font-size: 2rem;
+                font-weight: 700;
+                font-family: "JetBrains Mono", monospace;
+            }
+
+            .stat-sub {
+                font-size: 0.8rem;
+                margin-top: 0.5rem;
+            }
+
+            .controls {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+            }
+
+            .search-box {
+                background: var(--card-bg);
+                border: 1px solid var(--border);
+                padding: 0.8rem 1.5rem;
+                border-radius: 12px;
+                color: white;
+                width: 400px;
+                font-family: inherit;
+            }
+
+            .actions {
+                display: flex;
+                gap: 1rem;
+            }
+
+            .btn {
+                padding: 0.8rem 1.5rem;
+                border-radius: 12px;
+                cursor: pointer;
+                font-weight: 600;
+                transition: all 0.2s;
+                border: none;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .btn-primary {
+                background: var(--cyan);
+                color: black;
+            }
+
+            .btn-secondary {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid var(--border);
+                color: white;
+            }
+
+            .btn-danger {
+                background: rgba(255, 51, 102, 0.1);
+                border: 1px solid rgba(255, 51, 102, 0.3);
+                color: var(--error);
+            }
+
+            .btn-group {
+                display: flex;
+                gap: 1rem;
+            }
+
+            .btn:hover {
+                transform: scale(1.05);
+                filter: brightness(1.2);
+            }
+
+            .profile-table-container {
+                background: var(--card-bg);
+                backdrop-filter: blur(10px);
+                border: 1px solid var(--border);
+                border-radius: 16px;
+                overflow: hidden;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                text-align: left;
+            }
+
+            th {
+                padding: 1.2rem 1.5rem;
+                background: rgba(255, 255, 255, 0.02);
+                color: var(--text-dim);
+                font-size: 0.85rem;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                border-bottom: 1px solid var(--border);
+            }
+
+            td {
+                padding: 1.2rem 1.5rem;
+                border-bottom: 1px solid var(--border);
+                font-family: "JetBrains Mono", monospace;
+                font-size: 0.9rem;
+            }
+
+            tr:hover {
+                background: rgba(255, 242, 255, 0.02);
+            }
+
+            .method {
+                padding: 0.3rem 0.6rem;
+                border-radius: 6px;
+                font-size: 0.75rem;
+                font-weight: 700;
+                margin-right: 0.5rem;
+            }
+
+            .method-GET {
+                background: rgba(0, 242, 255, 0.1);
+                color: var(--cyan);
+            }
+
+            .method-POST {
+                background: rgba(0, 255, 163, 0.1);
+                color: var(--success);
+            }
+
+            .method-PUT {
+                background: rgba(251, 255, 0, 0.1);
+                color: var(--yellow);
+            }
+
+            .method-DELETE {
+                background: rgba(255, 51, 102, 0.1);
+                color: var(--error);
+            }
+
+            .latency-bar-container {
+                width: 150px;
+                height: 6px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 3px;
+                overflow: hidden;
+                margin-top: 0.5rem;
+            }
+
+            .latency-bar {
+                height: 100%;
+                border-radius: 3px;
+            }
+
+            .good {
+                background: var(--success);
+            }
+
+            .mid {
+                background: var(--warning);
+            }
+
+            .bad {
+                background: var(--error);
+            }
+
+            .p95-tag {
+                font-size: 0.75rem;
+                background: rgba(255, 0, 204, 0.1);
+                color: var(--magenta);
+                padding: 0.2rem 0.4rem;
+                border-radius: 4px;
+                border: 1px solid rgba(255, 0, 204, 0.2);
+            }
+
+            .loader {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 3px;
+                background: linear-gradient(90deg, transparent, var(--cyan), var(--magenta), transparent);
+                background-size: 200% 100%;
+                animation: loading 2s linear infinite;
+                display: none;
+            }
+
+            @keyframes loading {
+                0% {
+                    background-position: 200% 0;
+                }
+
+                100% {
+                    background-position: -200% 0;
+                }
+            }
+
+            #empty-state {
+                padding: 5rem;
+                text-align: center;
+                color: var(--text-dim);
+                display: none;
+            }
+
+            .toast {
+                position: fixed;
+                bottom: 2rem;
+                right: 2rem;
+                padding: 1rem 2rem;
+                background: var(--card-bg);
+                backdrop-filter: blur(20px);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                transform: translateY(100px);
+                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                z-index: 1000;
+            }
+
+            .toast.show {
+                transform: translateY(0);
+            }
+
+            #info-btn:hover {
+                transform: scale(1.1);
+                box-shadow: 0 0 20px rgba(0, 242, 255, 0.6);
+                background: rgba(0, 242, 255, 0.2);
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="loader" id="page-loader"></div>
+
+        <div class="container">
+            <header>
+                <div class="logo">
+                    <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    PROFILER<span>_V3</span>
+                </div>
+                <div style="display: flex; gap: 1.5rem; align-items: center">
+                    <button
+                        id="info-btn"
+                        style="
+                            background: rgba(0, 242, 255, 0.1);
+                            border: 1px solid var(--cyan);
+                            border-radius: 50%;
+                            width: 32px;
+                            height: 32px;
+                            color: var(--cyan);
+                            cursor: pointer;
+                            font-size: 1.2rem;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            transition: all 0.3s ease;
+                            box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+                        "
+                    >
+                        ?
+                    </button>
+                    <div class="status-badge">
+                        <div class="status-dot"></div>
+                        System Active
+                    </div>
+                    <div id="last-updated" style="font-size: 0.8rem; color: var(--text-dim)">Last update: Just now</div>
+                </div>
+            </header>
+
+            <div
+                id="info-popup"
+                class="popup"
+                style="
+                    display: none;
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: var(--card-bg);
+                    backdrop-filter: blur(20px);
+                    border: 1px solid var(--border);
+                    padding: 2rem;
+                    border-radius: 16px;
+                    z-index: 2000;
+                    max-width: 500px;
+                    width: 90%;
+                "
+            >
+                <h4 style="color: var(--cyan); margin-bottom: 1rem">Profiler Metrics Explained</h4>
+                <ul style="color: var(--text); line-height: 1.8; padding-left: 1.5rem">
+                    <li><strong>Min/Max Latency:</strong> Fastest and slowest response times observed.</li>
+                    <li><strong>Average Latency:</strong> Mean response time across all calls.</li>
+                    <li>
+                        <strong>P95 Latency:</strong> “95% of our users get this speed or better.” It tells you the
+                        experience for almost everyone. It filters out the worst 5% of slow requests.
+                    </li>
+                    <li>
+                        <strong>Cache Hit Rate:</strong> Percentage of requests served from cache vs database. Higher is
+                        better for performance.
+                    </li>
+                    <li>
+                        <strong>Error Count:</strong> Number of failed requests. High error rates indicate reliability
+                        issues.
+                    </li>
+                    <li>
+                        <strong>AsyncLocalStorage:</strong> Node.js feature used to track metrics per request without
+                        blocking the response thread.
+                    </li>
+                </ul>
+                <button id="close-popup" class="btn btn-secondary" style="margin-top: 1rem">Close</button>
+            </div>
+
+            <div
+                id="popup-overlay"
+                class="popup-overlay"
+                style="
+                    display: none;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    z-index: 1999;
+                "
+            ></div>
+
+            <div class="stats-grid" id="summary-section">
+                <div class="stat-card">
+                    <div class="stat-label">Total Calls</div>
+                    <div class="stat-value" id="stat-total-calls">0</div>
+                    <div class="stat-sub" id="stat-endpoints">0 active endpoints</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Latency</div>
+                    <div class="stat-value" id="stat-avg-latency" style="color: var(--cyan)">0ms</div>
+                    <div class="stat-sub">Across all routes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Slowest Trace</div>
+                    <div class="stat-value" id="stat-slowest" style="color: var(--error)">-</div>
+                    <div class="stat-sub" id="stat-slowest-name">Waiting for data...</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Cache Hit Rate</div>
+                    <div class="stat-value" id="stat-cache">0%</div>
+                    <div class="stat-desc" id="stat-cache-details">0 hits / 0 misses</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="search-container">
+                    <input type="text" id="search" class="search-box" placeholder="Filter endpoints (e.g. /users)..." />
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" id="btn-refresh">
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"
+                            ></path>
+                        </svg>
+                        Refresh
+                    </button>
+                    <button class="btn btn-danger" id="btn-clear">
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 9 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"
+                            ></path>
+                        </svg>
+                        Wipe Data
+                    </button>
+                </div>
+            </div>
+
+            <div class="profile-table-container">
+                <table id="profile-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 30%">Endpoint</th>
+                            <th>Calls</th>
+                            <th>Min</th>
+                            <th>Avg Latency</th>
+                            <th>P95</th>
+                            <th>Max</th>
+                            <th>Cache (H/M)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="profiles-body">
+                        <!-- Rows injected here -->
+                    </tbody>
+                </table>
+                <div id="empty-state">
+                    <p>No profiler data captured yet.</p>
+                    <p style="font-size: 0.8rem; margin-top: 1rem">Make some API calls to see the magic happen.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="toast" class="toast">Action completed successfully</div>
+
+        <script src="/v1/profiler-ui/script.js"></script>
+    </body>
+</html>

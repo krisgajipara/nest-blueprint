@@ -1,10 +1,6 @@
-import {
-    UserRepository,
-    UserService
-} from "@business-core-modules";
-import {
-    User
-} from "@core-database";
+import { UserRepository, UserService } from "@business-core-modules";
+import { TenantModule } from "@business-core-modules";
+import { User } from "@core-database";
 import { AppCacheModule } from "@core-shared-modules";
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
@@ -15,18 +11,9 @@ import { UserController } from "./user.controller";
  * Registers the user controller, service, repository, and database entities
  */
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([
-            User
-        ]),
-        AppCacheModule
-    ],
+    imports: [TypeOrmModule.forFeature([User]), AppCacheModule, TenantModule],
     controllers: [UserController],
-    providers: [
-        UserService,
-        UserRepository,
-        UserRepository
-    ],
+    providers: [UserService, UserRepository],
     exports: [UserService]
 })
-export class UserModule { }
+export class UserModule {}

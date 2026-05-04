@@ -3,6 +3,6 @@
     "collection": "@nestjs/schematics",
     "sourceRoot": "src",
     "compilerOptions": {
-        "assets": ["libs/@oc/server-core/utilities/i18n/**/*"]
+        "assets": ["libs/@anvix/server-core/utilities/i18n/**/*"]
     }
 }

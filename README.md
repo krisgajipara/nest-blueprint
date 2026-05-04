@@ -12,7 +12,7 @@ This project demonstrates a **modern, scalable backend architecture** built with
 ### Modular Architecture Benefits
 
 ```
-libs/@oc/
+libs/@anvix/
 ├── server-core/          # Shared infrastructure & utilities
 ├── business-core/        # Business logic modules
 └── documents/            # Architecture documentation
@@ -195,7 +195,7 @@ src/
 ├── app.module.ts        # Root application module
 └── main.ts              # Application entry point
 
-libs/@oc/
+libs/@anvix/
 ├── server-core/         # Shared infrastructure
 │   ├── config/          # Configuration files
 │   ├── database/        # Database entities & migrations
