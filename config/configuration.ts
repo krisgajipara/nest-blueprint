@@ -17,7 +17,8 @@ export const configuration = () => {
             database: process.env.DATABASE_NAME,
             synchronize: process.env.DATABASE_SYNC == "true",
             logging: process.env.DATABASE_LOG == "true",
-            cache: process.env.DATABASE_CACHE == "true"
+            cache: process.env.DATABASE_CACHE == "true",
+            ssl: process.env.DATABASE_SSL == "true"
         },
 
         jwt: {

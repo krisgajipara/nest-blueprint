@@ -14,6 +14,7 @@ export const validationSchema = Joi.object({
     DATABASE_SYNC: Joi.boolean().default(false),
     DATABASE_LOG: Joi.boolean().default(true),
     DATABASE_CACHE: Joi.boolean().default(true),
+    DATABASE_SSL: Joi.boolean().default(false),
 
     LOG_ENABLE: Joi.boolean().default(true),
 

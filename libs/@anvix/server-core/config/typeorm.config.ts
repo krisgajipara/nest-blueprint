@@ -22,9 +22,7 @@ export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
             "log"
         ] : false,
         cache: configService.get("db.cache"),
-        // ssl: {
-        //     rejectUnauthorized: false // when ssl-mode = require in postgres db server
-        // },
+        ssl: configService.get("db.ssl") ? { rejectUnauthorized: false } : false,
         synchronize: configService.get("db.synchronize"),
         entities: [
             __dirname + "/../database/entities/*.entity{.ts,.js}"

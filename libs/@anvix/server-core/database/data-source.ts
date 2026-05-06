@@ -8,6 +8,8 @@ const envFile = `${process.cwd()}/config/env/${process.env.NODE_ENV}.env`;
 
 config({ path: envFile });
 
+const databaseSslEnabled = process.env.DATABASE_SSL === "true";
+
 export const AppDataSource = new DataSource({
     type: "postgres",
     host: process.env.DATABASE_HOST,
@@ -17,9 +19,7 @@ export const AppDataSource = new DataSource({
     database: process.env.DATABASE_NAME,
     logging: process.env.DATABASE_LOG === "true",
     cache: process.env.DATABASE_CACHE === "true",
-    ssl: {
-        rejectUnauthorized: false // when ssl-mode = require in postgres db server
-    },
+    ssl: databaseSslEnabled ? { rejectUnauthorized: false } : false,
     synchronize: false, // This MUST be false for migrations
     entities: [__dirname + "/entities/*.entity{.ts,.js}"],
     migrations: [__dirname + "/migrations/**/*{.ts,.js}"],
