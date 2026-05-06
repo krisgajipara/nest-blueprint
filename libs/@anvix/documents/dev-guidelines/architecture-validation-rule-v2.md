@@ -1,4 +1,4 @@
-# Architecture Validation Rules
+﻿# Architecture Validation Rules
 
 This is the canonical validation checklist for backend code review and AI-generated code.
 
@@ -69,7 +69,7 @@ Controller -> Service -> Repository -> Entity
 
 - [ ] Tenant-owned repositories extend `TenantAwareRepository<T>`.
 - [ ] Tenant-owned repositories use `@Injectable({ scope: Scope.REQUEST })`.
-- [ ] Tenant-owned repositories inject `RequestContextService` from `@core-shared-modules`.
+- [ ] Tenant-owned repositories inject `AsyncContextService` from `@core-generic-services`.
 - [ ] Services do not inject TypeORM `Repository<T>` directly for tenant-owned entities.
 - [ ] Repositories select only the fields needed by the use case.
 - [ ] Repository methods expose semantic operations, such as `findActiveUsers()`.
@@ -209,4 +209,5 @@ Fix these when practical before merging:
 - Tests run:
 - Tests not run:
 ```
+
 

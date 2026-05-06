@@ -1,4 +1,4 @@
-import { AuthRoleGuard } from "@core-custom-guards";
+import { AuthRoleGuard, JwtAuthGuard, RoleGuard } from "@core-custom-guards";
 import { Tenant, TenantSubscriber, Token } from "@core-database";
 import { AsyncContextService } from "@core-generic-services";
 import { RequestContextService } from "@core-shared-modules";
@@ -26,7 +26,9 @@ import { TenantService } from "./tenant.service";
         TenantService,
 
         // Guards
-        AuthRoleGuard
+        AuthRoleGuard,
+        JwtAuthGuard,
+        RoleGuard
     ],
     exports: [
         AsyncContextService,
@@ -34,6 +36,8 @@ import { TenantService } from "./tenant.service";
         TenantRepository,
         TenantService,
         AuthRoleGuard,
+        JwtAuthGuard,
+        RoleGuard,
         TypeOrmModule
     ]
 })

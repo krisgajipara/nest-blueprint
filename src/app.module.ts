@@ -1,7 +1,6 @@
 import { typeOrmConfig } from "@core-config";
 import { CustomValidatorModule } from "@core-custom-validators";
 import { AllHttpExceptionFilter } from "@core-filters";
-import { AsyncContextService, AuditContextService } from "@core-generic-services";
 import {
     AsyncContextMiddleware,
     AuditMiddleware,
@@ -49,15 +48,13 @@ import { UserModule } from "./modules/user/user.module";
         AppCacheModule,
         AppPermissionModule,
         SharedModule,
-        TenantModule, // Global module providing RequestContextService - must be loaded first
+        TenantModule, // Global module providing AsyncContextService - must be loaded first
         AuthModule,
         UserModule,
         RoleModule
     ],
     controllers: [AppController],
     providers: [
-        AsyncContextService,
-        AuditContextService,
         Validator,
         SwaggerAuthMiddleware,
         {

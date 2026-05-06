@@ -11,11 +11,11 @@ import { IDynamicValidationOptions } from "../interfaces/dynamic-validation-opti
 import { Translation } from "../utilities/translation.utility";
 
 import { TranslationFile } from "@core-enums";
-import { RequestContextService } from "../generic-service/request-context.service";
+import { AsyncContextService } from "@core-generic-services";
 @Injectable()
 @ValidatorConstraint()
 export class ValidateAlphaNumericConstraint implements ValidatorConstraintInterface {
-    constructor(private readonly requestContextService: RequestContextService) {}
+
 
     validate(value: any) {
         const format = /^[a-zA-Z0-9]*$/;
@@ -25,8 +25,8 @@ export class ValidateAlphaNumericConstraint implements ValidatorConstraintInterf
     defaultMessage(args: ValidationArguments) {
         const { message, constraints } = args.constraints[0] as IDynamicValidationOptions;
 
-        // Get dynamic language from RequestContextService
-        const language = this.requestContextService.getLanguage();
+        // Get dynamic language from AsyncContextService static method
+        const language = AsyncContextService.getLanguage();
         return `${Translation.Translator(
             language,
             TranslationFile.Error,

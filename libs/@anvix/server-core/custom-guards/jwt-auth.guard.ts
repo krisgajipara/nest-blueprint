@@ -1,14 +1,17 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, Scope, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
+import { AsyncContextService, JwtPayload } from "@core-generic-services";
 
 /**
  * JwtAuthGuard (Single-Tenant, No roles)
  * Extracts user information from JWT payload and attaches it to the request
+ * Also stores token payload in context for downstream use
  */
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class JwtAuthGuard implements CanActivate {
     constructor(
-        private readonly jwtService: JwtService
+        private readonly jwtService: JwtService,
+        private readonly asyncContextService: AsyncContextService
     ) { }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -22,7 +25,15 @@ export class JwtAuthGuard implements CanActivate {
 
         try {
             // Verify and decode token
-            const payload = this.jwtService.verify(token);
+            const payload = this.jwtService.verify<JwtPayload>(token);
+
+            // Store full token payload in context
+            this.asyncContextService.setTokenPayload(payload);
+            
+            // Set user ID for audit (backward compatibility)
+            if (payload.sub) {
+                this.asyncContextService.setUserId(payload.sub);
+            }
 
             // Attach user info to request
             request.user = {

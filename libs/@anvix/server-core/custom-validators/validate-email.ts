@@ -3,7 +3,7 @@ import { TranslationFile } from "@core-enums";
 import { IDynamicValidationOptions } from "@core-interfaces";
 import { Translation } from "@core-utilities";
 import { Injectable } from "@nestjs/common";
-import { RequestContextService } from "../generic-service/request-context.service";
+import { AsyncContextService } from "@core-generic-services";
 import {
     ValidationArguments,
     ValidationOptions,
@@ -12,10 +12,11 @@ import {
     isEmail,
     registerDecorator
 } from "class-validator";
+
 @Injectable()
 @ValidatorConstraint({ async: true })
 export class ValidateEmailConstraint implements ValidatorConstraintInterface {
-    constructor(private readonly requestContextService: RequestContextService) {}
+
 
     validate(value: string) {
         if (typeof value !== "string") return true;
@@ -28,8 +29,8 @@ export class ValidateEmailConstraint implements ValidatorConstraintInterface {
     defaultMessage(args: ValidationArguments) {
         const { message, constraints } = args.constraints[0] as IDynamicValidationOptions;
 
-        // Get dynamic language from RequestContextService
-        const language = this.requestContextService.getLanguage();
+        // Get dynamic language from AsyncContextService static method
+        const language = AsyncContextService.getLanguage();
         return `${Translation.Translator(language, TranslationFile.Error, message || "ERR_NOT_VALID", constraints)}&&&${
             args.property
         }`;

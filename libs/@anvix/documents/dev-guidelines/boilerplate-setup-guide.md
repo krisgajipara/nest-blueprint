@@ -1,4 +1,4 @@
-# NestJS Boilerplate Setup Guide
+﻿# NestJS Boilerplate Setup Guide
 
 This guide explains how to create or update backend modules using the current Anvix architecture.
 
@@ -159,7 +159,7 @@ export class Booking extends BaseTenantModifiableEntity {
 
 - [ ] Tenant-owned repository extends `TenantAwareRepository<T>`.
 - [ ] Tenant-owned repository uses `@Injectable({ scope: Scope.REQUEST })`.
-- [ ] Repository injects `RequestContextService` from `@core-shared-modules`.
+- [ ] Repository injects `AsyncContextService` from `@core-generic-services`.
 - [ ] Repository methods return selective fields.
 - [ ] Sort fields are whitelisted.
 - [ ] Raw SQL manually filters by `tenant_id`.
@@ -169,7 +169,7 @@ Example:
 
 ```typescript
 import { Booking, TenantAwareRepository } from '@core-database';
-import { RequestContextService } from '@core-shared-modules';
+import { AsyncContextService } from '@core-generic-services';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -179,9 +179,9 @@ export class BookingRepository extends TenantAwareRepository<Booking> {
     constructor(
         @InjectRepository(Booking)
         repository: Repository<Booking>,
-        @Inject() requestContextService: RequestContextService
+        @Inject() AsyncContextService: AsyncContextService
     ) {
-        super(repository.target, repository.manager, repository.queryRunner, requestContextService);
+        super(repository.target, repository.manager, repository.queryRunner, AsyncContextService);
     }
 }
 ```
@@ -346,3 +346,4 @@ Before finishing a module:
 - Use raw SQL without tenant filtering.
 - Add duplicate standards documents.
 - Use old migration folder names unless those folders/scripts are actually added.
+

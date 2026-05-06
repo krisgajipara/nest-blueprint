@@ -1,4 +1,4 @@
-# Context Service Consolidation TODO
+﻿# Context Service Consolidation TODO
 
 Goal: keep one request context service that stores the full JWT token payload plus request language and tenant context, then remove the duplicate/deprecated context services.
 
@@ -15,7 +15,7 @@ libs/@anvix/server-core/generic-service/
 `-- request-context.service.ts        # In-memory language/userId service used by validators
 
 libs/@anvix/server-core/shared-modules/context/
-`-- app-context.service.ts            # RequestContextService wrapper around AsyncContextService for tenantId
+`-- app-context.service.ts            # AsyncContextService wrapper around AsyncContextService for tenantId
 ```
 
 ## Target Design
@@ -104,7 +104,7 @@ static getTokenPayload()
 ### Repositories
 
 - [ ] Update `database/repositories/tenant-aware.repository.ts` to depend on the canonical service.
-- [ ] Update repositories that inject `RequestContextService` from `@core-shared-modules`:
+- [ ] Update repositories that inject `AsyncContextService` from `@core-shared-modules`:
   - `business-core/modules/auth/otp.repository.ts`
   - `business-core/modules/auth/reset-password-token.repository.ts`
   - `business-core/modules/auth/token.repository.ts`
@@ -124,7 +124,7 @@ static getTokenPayload()
 
 - [ ] Update `src/app.module.ts` providers to remove `AuditContextService`.
 - [ ] Update `business-core/modules/tenant/tenant.module.ts` providers/exports.
-- [ ] Update any module that imports `RequestContextService` from `@core-shared-modules`.
+- [ ] Update any module that imports `AsyncContextService` from `@core-shared-modules`.
 
 ### Docs
 
@@ -139,8 +139,8 @@ static getTokenPayload()
 
 ## Verification Checklist
 
-- [ ] Run `rg "AuditContextService|generic-service/request-context.service|from \"@core-shared-modules\".*RequestContextService|from '@core-shared-modules'.*RequestContextService"`.
-- [ ] Run `rg "RequestContextService" libs src` and verify remaining usages are intentional.
+- [ ] Run `rg "AuditContextService|generic-service/request-context.service|from \"@core-shared-modules\".*AsyncContextService|from '@core-generic-services'.*AsyncContextService"`.
+- [ ] Run `rg "AsyncContextService" libs src` and verify remaining usages are intentional.
 - [ ] Run `rg "AsyncContextService" libs src` and verify the canonical service is the only context implementation.
 - [ ] Run `npm run lint` if practical.
 - [ ] Run `npm run build` only if applying migrations during build is acceptable for the current environment.
@@ -148,8 +148,9 @@ static getTokenPayload()
 ## Risks To Handle Carefully
 
 - Validators currently depend on language through `generic-service/request-context.service.ts`.
-- Tenant repositories currently depend on `RequestContextService` from `@core-shared-modules`.
+- Tenant repositories currently depend on `AsyncContextService` from `@core-shared-modules`.
 - TypeORM subscribers need static context access.
 - Guards currently differ in how they treat `PRODUCT_OWNER` and `SUPER_ADMIN`.
 - `AuditMiddleware` currently verifies JWT and may throw if token is invalid; changing token handling should preserve expected behavior.
+
 

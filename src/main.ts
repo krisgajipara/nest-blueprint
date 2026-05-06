@@ -25,7 +25,7 @@ async function bootstrap() {
         await preloadSecrets();
     }
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-        logger: process.env.LOG_ENABLE === "true" ? ["debug", "error", "warn", "log"] : ["error", "warn"]
+        logger: process.env.LOG_ENABLE == "true" ? ["debug", "error", "warn", "log"] : ["error", "warn"]
     });
     // Please remove constant security if using backend as https
     app.use(helmet({ contentSecurityPolicy: true }));

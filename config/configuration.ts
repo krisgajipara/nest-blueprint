@@ -86,6 +86,13 @@ export const configuration = () => {
         },
         tenant: {
             main_domain: process.env.MAIN_DOMAIN
+        },
+        swagger: {
+            user: process.env.SWAGGER_USER,
+            password: process.env.SWAGGER_PASSWORD
+        },
+        gemini_ai: {
+            api_key: process.env.GEMINI_API_KEY
         }
     };
 

@@ -134,9 +134,7 @@ backend/
 |           |-- filters/                         # Global exception handling
 |           |   `-- all-exceptions.filter.ts     # Catch-all exception formatter
 |           |-- generic-service/                 # Cross-cutting request context services
-|           |   |-- async-context.service.ts      # Async context service consumed by middleware and downstream services
-|           |   |-- audit-context.service.ts      # Audit metadata context service
-|           |   `-- request-context.service.ts    # Request-scoped context service
+|           |   `-- async-context.service.ts      # Canonical request context service (AsyncLocalStorage-backed)
 |           |-- interceptors/                    # Nest interceptors consumed by application pipeline
 |           |   |-- profiler.interceptor.ts       # Request profiling interceptor
 |           |   `-- req-res.interceptor.ts        # Request/response formatting and logging interceptor

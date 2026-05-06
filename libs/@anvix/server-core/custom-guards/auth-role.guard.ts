@@ -1,28 +1,14 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, Scope, UnauthorizedException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { UserTypeEnum } from "@core-enums";
-import { AsyncContextService } from "@core-generic-services";
+import { AsyncContextService, JwtPayload } from "@core-generic-services";
 import { PermissionRequirement } from "@core-custom-decorators";
 import { Token } from "@core-database";
 import { AppPermissionService } from "../shared-modules/permission/app-permission.service";
 
-/**
- * JWT payload interface
- */
-export interface JwtPayload {
-    sub: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    status: string;
-    userType: UserTypeEnum;
-    roleId: string | null;
-    tenantId?: string;
-    role?: any;
-}
 
 /**
  * AuthRoleGuard - Authentication and authorization guard with tenant awareness
@@ -33,7 +19,7 @@ export interface JwtPayload {
  * - PRODUCT_OWNER (SUPER_ADMIN) bypasses all permission checks
  * - Invalidates tokens on role/email change or user deactivation
  */
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class AuthRoleGuard implements CanActivate {
     constructor(
         private readonly reflector: Reflector,
@@ -56,6 +42,14 @@ export class AuthRoleGuard implements CanActivate {
         try {
             // Verify and decode token
             const payload = this.jwtService.verify<JwtPayload>(token);
+
+            // Store full token payload in context
+            this.asyncContextService.setTokenPayload(payload);
+            
+            // Set user ID for audit (backward compatibility)
+            if (payload.sub) {
+                this.asyncContextService.setUserId(payload.sub);
+            }
 
             // Validate token against database (check if revoked, user active, etc.)
             await this.validateTokenAgainstDatabase(token, payload);

@@ -13,11 +13,9 @@ import { ValidateTypeConstraint } from "./validate-type";
 import { ValidateUniqueArrayItemConstraint } from "./validate-unique-array-item";
 import { ValidateOptionalConstraint } from "./validate-optional";
 import { Module } from "@nestjs/common";
-import { RequestContextService } from "../generic-service/request-context.service";
 
 @Module({
     providers: [
-        RequestContextService,
         ValidateActiveRecordConstraint,
         ValidateOnlySpaceConstraint,
         ValidateTypeConstraint,
@@ -34,7 +32,6 @@ import { RequestContextService } from "../generic-service/request-context.servic
         ValidateOptionalConstraint
     ],
     exports: [
-        RequestContextService,
         ValidateActiveRecordConstraint,
         ValidateOnlySpaceConstraint,
         ValidateTypeConstraint,

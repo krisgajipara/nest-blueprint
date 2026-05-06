@@ -1,4 +1,4 @@
-import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
+import { SecretsManager } from "aws-sdk";
 
 export async function preloadSecrets() {
     const region = process.env.AWS_REGION || "us-east-1";
@@ -9,9 +9,8 @@ export async function preloadSecrets() {
         return;
     }
 
-    const client = new SecretsManagerClient({ region });
-    const command = new GetSecretValueCommand({ SecretId: secretId });
-    const response = await client.send(command);
+    const client = new SecretsManager({ region });
+    const response = await client.getSecretValue({ SecretId: secretId }).promise();
 
     if (response.SecretString) {
         const secrets = JSON.parse(response.SecretString);

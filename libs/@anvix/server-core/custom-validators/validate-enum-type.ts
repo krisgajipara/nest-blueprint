@@ -3,7 +3,7 @@ import { TranslationFile } from "@core-enums";
 import { IDynamicValidationOptions } from "@core-interfaces";
 import { Translation } from "@core-utilities";
 import { Injectable } from "@nestjs/common";
-import { RequestContextService } from "../generic-service/request-context.service";
+import { AsyncContextService } from "@core-generic-services";
 import {
     isEnum,
     registerDecorator,
@@ -15,7 +15,7 @@ import {
 @Injectable()
 @ValidatorConstraint({ async: true })
 export class ValidateEnumTypeConstraint implements ValidatorConstraintInterface {
-    constructor(private readonly requestContextService: RequestContextService) {}
+
 
     validate(value: any, args: ValidationArguments) {
         if (value === undefined || value === null) {
@@ -40,8 +40,8 @@ export class ValidateEnumTypeConstraint implements ValidatorConstraintInterface 
     defaultMessage(args: ValidationArguments) {
         const { message, constraints } = args.constraints[1] as IDynamicValidationOptions;
 
-        // Get dynamic language from RequestContextService
-        const language = this.requestContextService.getLanguage();
+        // Get dynamic language from AsyncContextService static method
+        const language = AsyncContextService.getLanguage();
         return `${Translation.Translator(language, TranslationFile.Error, message || "ERR_IS_ENUM", constraints)}&&&${
             args.property
         }`;

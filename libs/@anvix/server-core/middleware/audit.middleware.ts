@@ -1,9 +1,9 @@
-import { Injectable, NestMiddleware } from "@nestjs/common";
+import { Injectable, NestMiddleware, Scope } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { NextFunction, Request, Response } from "express";
-import { AsyncContextService } from "../generic-service/async-context.service";
+import { AsyncContextService, JwtPayload } from "../generic-service/async-context.service";
 
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class AuditMiddleware implements NestMiddleware {
     constructor(
         private readonly jwtService: JwtService,
@@ -14,12 +14,22 @@ export class AuditMiddleware implements NestMiddleware {
         const token = this.extractTokenFromHeader(req);
 
         if (token) {
-            // Verify and decode token
-            const payload = this.jwtService.verify(token);
+            try {
+                // Verify and decode token
+                const payload = this.jwtService.verify<JwtPayload>(token);
 
-            // Set user ID in AsyncLocalStorage context
-            if (payload?.sub) {
-                this.asyncContextService.setUserId(payload.sub);
+                // Set full token payload in AsyncLocalStorage context
+                if (payload) {
+                    this.asyncContextService.setTokenPayload(payload);
+                    
+                    // Set user ID for backward compatibility (audit subscriber uses getUserId())
+                    if (payload.sub) {
+                        this.asyncContextService.setUserId(payload.sub);
+                    }
+                }
+            } catch (error) {
+                // If token verification fails, we don't set context but don't block the request
+                // Authentication guards will handle unauthorized access
             }
         }
 

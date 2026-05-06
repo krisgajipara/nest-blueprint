@@ -3,7 +3,7 @@ import { TranslationFile } from "@core-enums";
 import { IDynamicValidationOptions } from "@core-interfaces";
 import { Translation } from "@core-utilities";
 import { Injectable } from "@nestjs/common";
-import { RequestContextService } from "../generic-service/request-context.service";
+import { AsyncContextService } from "@core-generic-services";
 import {
     isNumber,
     max,
@@ -16,7 +16,7 @@ import {
 @Injectable()
 @ValidatorConstraint({ async: false })
 export class ValidateMaxValueConstraint implements ValidatorConstraintInterface {
-    constructor(private readonly requestContextService: RequestContextService) {}
+
     validate(value: any, args: ValidationArguments) {
         const maxNumber = args.constraints[1] as number;
         if (isNumber(value)) {
@@ -29,8 +29,8 @@ export class ValidateMaxValueConstraint implements ValidatorConstraintInterface 
     defaultMessage(args: ValidationArguments) {
         const { message, constraints } = args.constraints[0] as IDynamicValidationOptions;
 
-        // Get dynamic language from RequestContextService
-        const language = this.requestContextService.getLanguage();
+        // Get dynamic language from AsyncContextService static method
+        const language = AsyncContextService.getLanguage();
         constraints.max = args.constraints[1];
 
         return `${Translation.Translator(language, TranslationFile.Error, message || "ERR_MAX_VALUE", constraints)}&&&${

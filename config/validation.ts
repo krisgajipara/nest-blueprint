@@ -59,5 +59,8 @@ export const validationSchema = Joi.object({
     SENTRY_PROFILES_SAMPLE_RATE: Joi.string().required(),
     SENTRY_ENABLED: Joi.string().required(),
 
-    MAIN_DOMAIN: Joi.string().required()
+    MAIN_DOMAIN: Joi.string().required(),
+    SWAGGER_USER: Joi.string().required(),
+    SWAGGER_PASSWORD: Joi.string().required(),
+    GEMINI_API_KEY: Joi.string().required()
 });

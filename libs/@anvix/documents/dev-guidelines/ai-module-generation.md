@@ -1,4 +1,4 @@
-# AI Module Generation Guide
+﻿# AI Module Generation Guide
 
 Use this checklist when asking AI to create or update a backend module.
 
@@ -98,7 +98,7 @@ libs/@anvix/server-core/shared-modules/context/app-context.service.ts
 
 - [ ] Tenant-owned repository extends `TenantAwareRepository<T>`.
 - [ ] Repository is request-scoped.
-- [ ] Repository injects `RequestContextService`.
+- [ ] Repository injects `AsyncContextService`.
 - [ ] Repository methods use selective fields.
 - [ ] Sorting uses whitelisted fields.
 - [ ] Raw SQL includes tenant filtering.
@@ -153,4 +153,5 @@ Prioritize bugs, tenant isolation risks, missing migrations, missing permission 
 Give findings first with file/line references.
 Do not summarize until after findings.
 ```
+
 

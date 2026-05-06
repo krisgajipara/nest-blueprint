@@ -1,4 +1,4 @@
-# Repository Standards
+﻿# Repository Standards
 
 This document defines repository rules for the current Anvix backend architecture.
 
@@ -14,7 +14,7 @@ Related docs:
 
 - Tenant-owned repositories must extend `TenantAwareRepository<T>`.
 - Tenant-owned repositories must be request-scoped.
-- Tenant-owned repositories must inject `RequestContextService` from `@core-shared-modules`.
+- Tenant-owned repositories must inject `AsyncContextService` from `@core-generic-services`.
 - Services should depend on repositories in their own module only.
 - Cross-module data access should happen through services.
 - Repositories should not call services.
@@ -26,7 +26,7 @@ Related docs:
 
 ```typescript
 import { TenantAwareRepository, User } from '@core-database';
-import { RequestContextService } from '@core-shared-modules';
+import { AsyncContextService } from '@core-generic-services';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -36,9 +36,9 @@ export class UserRepository extends TenantAwareRepository<User> {
     constructor(
         @InjectRepository(User)
         repository: Repository<User>,
-        @Inject() requestContextService: RequestContextService
+        @Inject() AsyncContextService: AsyncContextService
     ) {
-        super(repository.target, repository.manager, repository.queryRunner, requestContextService);
+        super(repository.target, repository.manager, repository.queryRunner, AsyncContextService);
     }
 }
 ```
@@ -66,9 +66,9 @@ export class RoleRepository extends TenantAwareRepository<Role> {
     constructor(
         @InjectRepository(Role)
         repository: Repository<Role>,
-        @Inject() requestContextService: RequestContextService
+        @Inject() AsyncContextService: AsyncContextService
     ) {
-        super(repository.target, repository.manager, repository.queryRunner, requestContextService);
+        super(repository.target, repository.manager, repository.queryRunner, AsyncContextService);
     }
 
     async findByName(name: string): Promise<Role | null> {
@@ -155,11 +155,12 @@ Keep system-wide access explicit and avoid mixing system-wide queries with tenan
 
 - [ ] Tenant-owned repository extends `TenantAwareRepository<T>`.
 - [ ] Repository is request-scoped when tenant context is required.
-- [ ] Repository injects `RequestContextService` from `@core-shared-modules`.
+- [ ] Repository injects `AsyncContextService` from `@core-generic-services`.
 - [ ] Repository uses selective field returns.
 - [ ] Repository does not call services.
 - [ ] Repository is not exported for cross-module access.
 - [ ] Raw SQL includes tenant filtering.
 - [ ] Database views include `tenant_id` when tenant filtering is needed.
 - [ ] Tests cover tenant isolation for high-risk queries.
+
 

@@ -10,12 +10,12 @@ import {
 
 import { IDynamicValidationOptions } from "../interfaces/dynamic-validation-option.interface";
 import { Translation } from "../utilities/translation.utility";
-import { RequestContextService } from "../generic-service/request-context.service";
+import { AsyncContextService } from "@core-generic-services";
 
 @Injectable()
 @ValidatorConstraint()
 export class ValidateFileSizeConstraint implements ValidatorConstraintInterface {
-    constructor(private readonly requestContextService: RequestContextService) {}
+
 
     validate(value: any, args: ValidationArguments) {
         const { minSize, maxSize } = args.constraints[0].constraints;
@@ -40,8 +40,8 @@ export class ValidateFileSizeConstraint implements ValidatorConstraintInterface 
     defaultMessage(args: ValidationArguments) {
         const { message, constraints } = args.constraints[0] as IDynamicValidationOptions;
 
-        // Get dynamic language from RequestContextService
-        const language = this.requestContextService.getLanguage();
+        // Get dynamic language from AsyncContextService static method
+        const language = AsyncContextService.getLanguage();
 
         // Convert bytes to MB for display
         if (constraints.minSize) {

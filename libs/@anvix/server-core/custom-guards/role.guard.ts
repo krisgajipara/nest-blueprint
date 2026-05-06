@@ -1,20 +1,23 @@
 import { UserTypeEnum } from "@core-enums";
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, Scope, UnauthorizedException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { PermissionRequirement } from "../custom-decorators/require-permissions.decorator";
 import { AppPermissionService } from "../shared-modules/permission/app-permission.service";
+import { AsyncContextService, JwtPayload } from "@core-generic-services";
 
 /**
  * RoleGuard that checks JWT token and validates permissions from role data in token
  * Extracts role information from JWT payload and checks against required permissions
+ * Also stores token payload in context for downstream use
  */
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class RoleGuard implements CanActivate {
     constructor(
         private readonly reflector: Reflector,
         private readonly jwtService: JwtService,
-        private readonly appPermissionService: AppPermissionService
+        private readonly appPermissionService: AppPermissionService,
+        private readonly asyncContextService: AsyncContextService
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -28,7 +31,15 @@ export class RoleGuard implements CanActivate {
 
         try {
             // Verify and decode token
-            const payload = this.jwtService.verify(token);
+            const payload = this.jwtService.verify<JwtPayload>(token);
+
+            // Store full token payload in context
+            this.asyncContextService.setTokenPayload(payload);
+            
+            // Set user ID for audit (backward compatibility)
+            if (payload.sub) {
+                this.asyncContextService.setUserId(payload.sub);
+            }
 
             // Attach user info to request
             request.user = {

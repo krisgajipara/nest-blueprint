@@ -11,11 +11,11 @@ import { Injectable } from "@nestjs/common";
 import { EntityTarget } from "typeorm";
 
 import { TranslationFile } from "@core-enums";
-import { RequestContextService } from "../generic-service/request-context.service";
+import { AsyncContextService } from "@core-generic-services";
 @Injectable()
 @ValidatorConstraint({ async: true })
 export class ValidateActiveRecordConstraint implements ValidatorConstraintInterface {
-    constructor(private readonly requestContextService: RequestContextService) {}
+
     async validate(value: any, args: ValidationArguments) {
         if (typeof value !== "string" || value.trim() === "") {
             return true;
@@ -35,8 +35,8 @@ export class ValidateActiveRecordConstraint implements ValidatorConstraintInterf
     defaultMessage(args: ValidationArguments) {
         const { message, constraints } = args.constraints[0] as IDynamicValidationOptions;
 
-        // Get dynamic language from RequestContextService
-        const language = this.requestContextService.getLanguage();
+        // Get dynamic language from AsyncContextService static method
+        const language = AsyncContextService.getLanguage();
         return `${Translation.Translator(
             language,
             TranslationFile.Error,

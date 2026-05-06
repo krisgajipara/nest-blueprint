@@ -1,4 +1,4 @@
-# Multi-Tenant Architecture Guide
+﻿# Multi-Tenant Architecture Guide
 
 This guide explains the current multi-tenant architecture used by the backend.
 
@@ -48,12 +48,10 @@ libs/@anvix/server-core/
 |-- context/
 |   `-- context.storage.ts                     # AsyncLocalStorage backing store
 |-- generic-service/
-|   |-- async-context.service.ts               # Sets/gets tenantId and userId in AsyncLocalStorage
-|   |-- audit-context.service.ts               # Audit context helper
-|   `-- request-context.service.ts             # Language/user request context helper
+|   `-- async-context.service.ts               # Full request context (tenantId, language, token payload)
 |-- shared-modules/
 |   `-- context/
-|       `-- app-context.service.ts             # RequestContextService wrapper around AsyncContextService
+|       `-- app-context.service.ts             # Backward-compatible wrapper for AsyncContextService
 |-- middleware/
 |   |-- async-context.middleware.ts            # Initializes AsyncLocalStorage for each request
 |   |-- audit.middleware.ts                    # Captures audit metadata
@@ -148,7 +146,7 @@ Tenant-owned repositories should extend `TenantAwareRepository<T>`.
 
 ```typescript
 import { TenantAwareRepository, Project } from '@core-database';
-import { RequestContextService } from '@core-shared-modules';
+import { AsyncContextService } from '@core-generic-services';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -158,9 +156,9 @@ export class ProjectRepository extends TenantAwareRepository<Project> {
     constructor(
         @InjectRepository(Project)
         repository: Repository<Project>,
-        @Inject() requestContextService: RequestContextService
+        @Inject() AsyncContextService: AsyncContextService
     ) {
-        super(repository.target, repository.manager, repository.queryRunner, requestContextService);
+        super(repository.target, repository.manager, repository.queryRunner, AsyncContextService);
     }
 
     async findActiveProjects(): Promise<Project[]> {
@@ -254,7 +252,7 @@ For raw queries and database views:
 - [ ] Entity extends `BaseTenantModifiableEntity` or `BaseTenantModifiableEntityWithoutIdentity`.
 - [ ] Repository extends `TenantAwareRepository<T>`.
 - [ ] Repository is request-scoped with `@Injectable({ scope: Scope.REQUEST })`.
-- [ ] Repository injects `RequestContextService` from `@core-shared-modules`.
+- [ ] Repository injects `AsyncContextService` from `@core-generic-services`.
 - [ ] Controller uses the correct guard for JWT, tenant, and permission needs.
 - [ ] Controller uses `@RequirePermissions()` where needed.
 - [ ] Raw queries include explicit tenant filtering.
@@ -266,7 +264,7 @@ For raw queries and database views:
 For repository-level tests, set tenant context before running tenant-aware queries:
 
 ```typescript
-requestContextService.setTenantId('test-tenant-id');
+AsyncContextService.setTenantId('test-tenant-id');
 
 const projects = await projectRepository.find();
 ```
@@ -298,3 +296,4 @@ asyncContextService.setTenantId('test-tenant-id');
 - Confirm the entity extends a tenant-aware base entity.
 - Confirm the repository extends `TenantAwareRepository<T>`.
 - Confirm raw SQL or unfiltered query builders are not being used accidentally.
+

@@ -3,7 +3,7 @@ import { TranslationFile } from "@core-enums";
 import { IDynamicValidationOptions } from "@core-interfaces";
 import { Translation } from "@core-utilities";
 import { Injectable } from "@nestjs/common";
-import { RequestContextService } from "../generic-service/request-context.service";
+import { AsyncContextService } from "@core-generic-services";
 import {
     isArray,
     registerDecorator,
@@ -16,7 +16,7 @@ import {
 @Injectable()
 @ValidatorConstraint()
 export class ValidateUniqueArrayItemConstraint implements ValidatorConstraintInterface {
-    constructor(private readonly requestContextService: RequestContextService) {}
+
 
     validate(value: any) {
         if (!isArray(value)) return true;
@@ -27,8 +27,8 @@ export class ValidateUniqueArrayItemConstraint implements ValidatorConstraintInt
     defaultMessage(args: ValidationArguments) {
         const { message, constraints } = args.constraints[0] as IDynamicValidationOptions;
 
-        // Get dynamic language from RequestContextService
-        const language = this.requestContextService.getLanguage();
+        // Get dynamic language from AsyncContextService static method
+        const language = AsyncContextService.getLanguage();
 
         return `${Translation.Translator(
             language,

@@ -1,4 +1,4 @@
-# Coding Standards
+﻿# Coding Standards
 
 This is the canonical coding standards document for the backend.
 
@@ -129,7 +129,7 @@ System-wide entities such as `Tenant` should extend `BaseSystemModifiableEntity`
 - Services should not inject TypeORM `Repository<T>` directly for tenant-owned entities.
 - Tenant-owned repositories must extend `TenantAwareRepository<T>`.
 - Tenant-owned repositories must be request-scoped with `@Injectable({ scope: Scope.REQUEST })`.
-- Tenant-owned repositories must inject `RequestContextService` from `@core-shared-modules`.
+- Tenant-owned repositories must inject `AsyncContextService` from `@core-generic-services`.
 - Return only fields needed by the API. Do not select everything by habit.
 - Use TypeORM QueryBuilder for complex queries.
 - Use enums/constants instead of hardcoded strings.
@@ -139,7 +139,7 @@ Example:
 
 ```typescript
 import { TenantAwareRepository, User } from '@core-database';
-import { RequestContextService } from '@core-shared-modules';
+import { AsyncContextService } from '@core-generic-services';
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -149,9 +149,9 @@ export class UserRepository extends TenantAwareRepository<User> {
     constructor(
         @InjectRepository(User)
         repository: Repository<User>,
-        @Inject() requestContextService: RequestContextService
+        @Inject() AsyncContextService: AsyncContextService
     ) {
-        super(repository.target, repository.manager, repository.queryRunner, requestContextService);
+        super(repository.target, repository.manager, repository.queryRunner, AsyncContextService);
     }
 }
 ```
@@ -289,4 +289,5 @@ Controller -> Service -> Repository -> Entity
 - Run the relevant build/lint/test command when practical.
 - Update docs when folder structure, migrations, tenant behavior, API patterns, or standards change.
 - Check for stale duplicate documentation before adding new standards files.
+
 

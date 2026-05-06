@@ -1,4 +1,4 @@
-import { Injectable, NestMiddleware } from '@nestjs/common';
+import { Injectable, NestMiddleware, Scope } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 import { AsyncContextService } from '../generic-service/async-context.service';
 
@@ -10,15 +10,15 @@ import { AsyncContextService } from '../generic-service/async-context.service';
  * that can be accessed from anywhere in the async call chain, including
  * TypeORM subscribers.
  */
-@Injectable()
+@Injectable({ scope: Scope.REQUEST })
 export class AsyncContextMiddleware implements NestMiddleware {
-  constructor(private readonly asyncContextService: AsyncContextService) {}
+    constructor(private readonly asyncContextService: AsyncContextService) {}
 
-  use(req: Request, res: Response, next: NextFunction): void {
-    // Initialize AsyncLocalStorage context for this request
-    this.asyncContextService.initializeContext();
+    use(req: Request, res: Response, next: NextFunction): void {
+        // Initialize AsyncLocalStorage context for this request
+        this.asyncContextService.initializeContext();
 
-    // Continue with request processing
-    next();
-  }
+        // Continue with request processing
+        next();
+    }
 }
