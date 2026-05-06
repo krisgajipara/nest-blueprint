@@ -1,11 +1,8 @@
 import * as Joi from "joi";
-
 export const validationSchema = Joi.object({
     NODE_ENV: Joi.string().valid("development", "production").default("development"),
-
     SERVER_PORT: Joi.number().default(3031),
     WHITELIST: Joi.string().required(),
-
     DATABASE_HOST: Joi.string().default("localhost"),
     DATABASE_PORT: Joi.number().default(5432),
     DATABASE_USER: Joi.string().required(),
@@ -15,51 +12,34 @@ export const validationSchema = Joi.object({
     DATABASE_LOG: Joi.boolean().default(true),
     DATABASE_CACHE: Joi.boolean().default(true),
     DATABASE_SSL: Joi.boolean().default(false),
-
     LOG_ENABLE: Joi.boolean().default(true),
-
     JWT_EXPIRE_IN: Joi.number().default(3600),
     JWT_SECRET_KEY: Joi.string().required(),
     REFRESH_TOKEN_EXPIRE_IN: Joi.number().default(604800),
     REFRESH_TOKEN_SECRET_KEY: Joi.string().required(),
-
     FORGOT_PASSWORD_EMAIL_VALID_TILL: Joi.number().default(30),
     SUPER_ADMIN_WEB_URL: Joi.string().default("https://dev.waitless.app/"),
-
     EMAIL_HOST: Joi.string().default("smtp.mailtrap.io"),
     EMAIL_USER: Joi.string().required(),
     EMAIL_PASS: Joi.string().required(),
     EMAIL_PORT: Joi.number().default(2525),
     EMAIL_SECURE: Joi.boolean().default(false),
-
     AWS_ACCESS_KEY_ID: Joi.string().required(),
     AWS_SECRET_ACCESS_KEY: Joi.string().required(),
     AWS_PRIVATE_BUCKET_NAME: Joi.string().required(),
-
-    TWILIO_ACCOUNTSID: Joi.string().required(),
-    TWILIO_APIKEY: Joi.string().required(),
-    TWILIO_APISECRET: Joi.string().required(),
-    TWILIO_PHONE_NUMBER: Joi.string().required(),
-
     OTP_EXPIRE_TIME: Joi.number().default(15),
     OTP_ENABLED: Joi.boolean().default(false),
-
     DOC_URL: Joi.string().default("https://aws-s3.bucket.com/"),
-
     FRONTEND_BASE_URL: Joi.string().required(),
     ADMIN_BASE_URL: Joi.string().required(),
-
     STRIPE_SECRET_KEY: Joi.string().required(),
     FCM_SERVER_KEY: Joi.string().required(),
-
     COOKIE_SECRET: Joi.string().required(),
-
     SENTRY_DSN: Joi.string().required(),
     SENTRY_ENVIRONMENT: Joi.string().required(),
     SENTRY_TRACES_SAMPLE_RATE: Joi.string().required(),
     SENTRY_PROFILES_SAMPLE_RATE: Joi.string().required(),
     SENTRY_ENABLED: Joi.string().required(),
-
     MAIN_DOMAIN: Joi.string().required(),
     SWAGGER_USER: Joi.string().required(),
     SWAGGER_PASSWORD: Joi.string().required(),

@@ -72,12 +72,6 @@ export const configuration = () => {
             server_key: process.env.FCM_SERVER_KEY
         },
 
-        twilio: {
-            twilio_account_sid: process.env.TWILIO_ACCOUNTSID,
-            twilio_apikey: process.env.TWILIO_APIKEY,
-            twilio_api_secret: process.env.TWILIO_APISECRET,
-            twilio_phone_number: process.env.TWILIO_PHONE_NUMBER
-        },
         sentry: {
             dsn: process.env.SENTRY_DSN,
             environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV,
