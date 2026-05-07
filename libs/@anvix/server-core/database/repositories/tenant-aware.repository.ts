@@ -10,14 +10,14 @@ import {
 } from "typeorm";
 import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import { UpsertOptions } from "typeorm/repository/UpsertOptions";
-import { RequestContextService } from "@core-shared-modules";
+import { AsyncContextService } from "@core-generic-services";
 
 export class TenantAwareRepository<T extends any> extends Repository<T> {
     constructor(
         target: any,
         manager: any,
         queryRunner: any,
-        public readonly context: RequestContextService
+        public readonly asyncContextService: AsyncContextService
     ) {
         super(target, manager, queryRunner);
     }
@@ -25,7 +25,7 @@ export class TenantAwareRepository<T extends any> extends Repository<T> {
     private readonly logger = new Logger(TenantAwareRepository.name);
 
     protected applyFilters(qb: SelectQueryBuilder<T>): SelectQueryBuilder<T> {
-        const tenantId = this.context.getTenantId();
+        const tenantId = this.asyncContextService.getTenantId();
         const hasTenantId = this.metadata.columns.some((col) => col.propertyName === "tenantId");
         const hasDeletedAt = this.metadata.columns.some((col) => col.propertyName === "deletedAt");
 
@@ -173,7 +173,7 @@ export class TenantAwareRepository<T extends any> extends Repository<T> {
         criteria: string | string[] | number | number[] | Date | Date[] | FindOptionsWhere<T>,
         partialEntity: QueryDeepPartialEntity<T>
     ): Promise<UpdateResult> {
-        const tenantId = this.context.getTenantId();
+        const tenantId = this.asyncContextService.getTenantId();
         let enhancedCriteria = criteria;
 
         if (tenantId) {
@@ -190,7 +190,7 @@ export class TenantAwareRepository<T extends any> extends Repository<T> {
     override async delete(
         criteria: string | string[] | number | number[] | Date | Date[] | FindOptionsWhere<T>
     ): Promise<DeleteResult> {
-        const tenantId = this.context.getTenantId();
+        const tenantId = this.asyncContextService.getTenantId();
         let enhancedCriteria = criteria;
 
         if (tenantId) {
@@ -207,7 +207,7 @@ export class TenantAwareRepository<T extends any> extends Repository<T> {
     override async softDelete(
         criteria: string | string[] | number | number[] | Date | Date[] | FindOptionsWhere<T>
     ): Promise<UpdateResult> {
-        const tenantId = this.context.getTenantId();
+        const tenantId = this.asyncContextService.getTenantId();
         let enhancedCriteria = criteria;
 
         if (tenantId) {
@@ -222,7 +222,7 @@ export class TenantAwareRepository<T extends any> extends Repository<T> {
     }
 
     override async insert(entity: QueryDeepPartialEntity<T> | QueryDeepPartialEntity<T>[]): Promise<InsertResult> {
-        const tenantId = this.context.getTenantId();
+        const tenantId = this.asyncContextService.getTenantId();
         if (tenantId) {
             if (Array.isArray(entity)) {
                 entity.forEach((e: any) => {
@@ -240,7 +240,7 @@ export class TenantAwareRepository<T extends any> extends Repository<T> {
         entityOrEntities: QueryDeepPartialEntity<T> | QueryDeepPartialEntity<T>[],
         conflictPathsOrOptions: string[] | UpsertOptions<T>
     ): Promise<InsertResult> {
-        const tenantId = this.context.getTenantId();
+        const tenantId = this.asyncContextService.getTenantId();
         if (tenantId) {
             if (Array.isArray(entityOrEntities)) {
                 entityOrEntities.forEach((e: any) => {
@@ -255,7 +255,7 @@ export class TenantAwareRepository<T extends any> extends Repository<T> {
     }
 
     override async save(entities: any, options?: any): Promise<any> {
-        const tenantId = this.context.getTenantId();
+        const tenantId = this.asyncContextService.getTenantId();
         if (tenantId) {
             if (Array.isArray(entities)) {
                 entities.forEach((e) => {

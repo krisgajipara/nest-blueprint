@@ -1,7 +1,7 @@
 import { CommonDropdownRequestDto } from "@business-core-dto";
 import { Tenant, TenantAwareRepository } from "@core-database";
 import { SortDirection, TenantStatus } from "@core-enums";
-import { RequestContextService } from "@core-shared-modules";
+import { AsyncContextService } from "@core-generic-services";
 import { Inject, Injectable, Scope } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -16,9 +16,9 @@ export class TenantRepository extends TenantAwareRepository<Tenant> {
     constructor(
         @InjectRepository(Tenant)
         repository: Repository<Tenant>,
-        @Inject() requestContextService: RequestContextService
+        @Inject() asyncContextService: AsyncContextService
     ) {
-        super(repository.target, repository.manager, repository.queryRunner, requestContextService);
+        super(repository.target, repository.manager, repository.queryRunner, asyncContextService);
     }
 
     /**

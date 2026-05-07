@@ -1,7 +1,6 @@
 import { AuthRoleGuard, JwtAuthGuard, RoleGuard } from "@core-custom-guards";
 import { Tenant, TenantSubscriber, Token } from "@core-database";
 import { AsyncContextService } from "@core-generic-services";
-import { RequestContextService } from "@core-shared-modules";
 import { Global, Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { TenantRepository } from "./tenant.repository";
@@ -17,7 +16,6 @@ import { TenantService } from "./tenant.service";
     imports: [TypeOrmModule.forFeature([Tenant, Token])],
     providers: [
         AsyncContextService,
-        RequestContextService,
         TenantRepository,
         // Subscribers
         TenantSubscriber,
@@ -32,7 +30,6 @@ import { TenantService } from "./tenant.service";
     ],
     exports: [
         AsyncContextService,
-        RequestContextService,
         TenantRepository,
         TenantService,
         AuthRoleGuard,

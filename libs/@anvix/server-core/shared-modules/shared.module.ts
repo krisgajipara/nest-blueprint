@@ -1,6 +1,5 @@
 import { Global, Module } from "@nestjs/common";
 import { AppCacheModule } from "./cache/app-cache.module";
-import { AppContextModule } from "./context/app-context.module";
 import { AppJwtModule } from "./jwt/app-jwt.module";
 import { AppMailerModule } from "./mailer/app-mailer.module";
 import { AppPermissionModule } from "./permission/app-permission.module";
@@ -16,7 +15,6 @@ import { AppS3Module } from "./s3/app-s3.module";
     imports: [
         AppProfilerModule,
         AppCacheModule,
-        AppContextModule,
         AppPermissionModule,
         AppProfilerModule,
         AppS3Module,
@@ -27,7 +25,6 @@ import { AppS3Module } from "./s3/app-s3.module";
     exports: [
         AppProfilerModule,
         AppCacheModule,
-        AppContextModule,
         AppPermissionModule,
         AppProfilerModule,
         AppS3Module,

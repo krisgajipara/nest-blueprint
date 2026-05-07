@@ -1,7 +1,5 @@
 export * from "./cache/app-cache.module";
 export * from "./cache/app-cache.service";
-export * from "./context/app-context.module";
-export * from "./context/app-context.service";
 export * from "./jwt/app-jwt.module";
 export * from "./jwt/app-jwt.service";
 export * from "./mailer/app-mailer.module";

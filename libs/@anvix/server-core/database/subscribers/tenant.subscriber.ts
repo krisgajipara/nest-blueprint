@@ -5,8 +5,8 @@ import { EntitySubscriberInterface, EventSubscriber, InsertEvent, UpdateEvent } 
  * TypeORM event subscriber that automatically populates tenantId
  * on entities that have the tenantId column.
  *
- * Uses dependency injection to get the request-scoped RequestContextService
- * instead of static context (which would cause race conditions)
+ * Uses AsyncContextService static helpers to read tenant id from AsyncLocalStorage
+ * (subscribers are outside Nest request-scoped DI).
  */
 @EventSubscriber()
 export class TenantSubscriber implements EntitySubscriberInterface {

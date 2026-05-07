@@ -1,5 +1,5 @@
 import { TenantAwareRepository, Token } from "@core-database";
-import { RequestContextService } from "@core-shared-modules";
+import { AsyncContextService } from "@core-generic-services";
 import { Inject, Injectable, Scope } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -9,8 +9,8 @@ export class TokenRepository extends TenantAwareRepository<Token> {
     constructor(
         @InjectRepository(Token)
         repository: Repository<Token>,
-        @Inject() requestContextService: RequestContextService
+        @Inject() asyncContextService: AsyncContextService
     ) {
-        super(repository.target, repository.manager, repository.queryRunner, requestContextService);
+        super(repository.target, repository.manager, repository.queryRunner, asyncContextService);
     }
 }

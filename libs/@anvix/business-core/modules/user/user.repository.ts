@@ -1,6 +1,6 @@
 import { TenantAwareRepository, User } from "@core-database";
 import { SortDirection, UserStatus, UserTypeEnum } from "@core-enums";
-import { RequestContextService } from "@core-shared-modules";
+import { AsyncContextService } from "@core-generic-services";
 import { Inject, Injectable, Scope } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -15,9 +15,9 @@ export class UserRepository extends TenantAwareRepository<User> {
     constructor(
         @InjectRepository(User)
         repository: Repository<User>,
-        @Inject() requestContextService: RequestContextService
+        @Inject() asyncContextService: AsyncContextService
     ) {
-        super(repository.target, repository.manager, repository.queryRunner, requestContextService);
+        super(repository.target, repository.manager, repository.queryRunner, asyncContextService);
     }
 
     /**
