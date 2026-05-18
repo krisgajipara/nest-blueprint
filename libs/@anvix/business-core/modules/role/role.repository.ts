@@ -75,9 +75,9 @@ export class RoleRepository extends TenantAwareRepository<Role> {
             updatedAt: "role.updatedAt"
         };
 
-        const orderDirection = searchRequest.sortDirection || SortDirection.DESC;
+        const sortDirection = searchRequest.sortDirection || SortDirection.DESC;
         const orderBy = SORT_MAP[searchRequest.sortBy] ?? "role.createdAt";
-        queryBuilder.orderBy(orderBy, orderDirection);
+        queryBuilder.orderBy(orderBy, sortDirection);
 
         // Apply pagination
         const pageSize = searchRequest.pageSize || 10;
@@ -123,9 +123,9 @@ export class RoleRepository extends TenantAwareRepository<Role> {
         }
 
         // Apply sorting
-        const orderDirection = searchRequest.sortDirection || SortDirection.ASC;
+        const sortDirection = searchRequest.sortDirection || SortDirection.ASC;
 
-        queryBuilder.orderBy("role.name", orderDirection);
+        queryBuilder.orderBy("role.name", sortDirection);
 
         // Apply pagination
         const pageSize = searchRequest.pageSize || 10;

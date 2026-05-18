@@ -63,7 +63,7 @@ export class TenantRepository extends TenantAwareRepository<Tenant> {
         }
 
         // Apply sorting
-        const orderDirection = searchRequest.sortDirection || SortDirection.DESC;
+        const sortDirection = searchRequest.sortDirection || SortDirection.DESC;
 
         // Whitelisted sortable fields
         const SORT_MAP: Record<string, string> = {
@@ -76,7 +76,7 @@ export class TenantRepository extends TenantAwareRepository<Tenant> {
         // Resolve field safely
         const orderByField = SORT_MAP[searchRequest.sortBy] ?? "tenant.createdAt";
 
-        queryBuilder.orderBy(orderByField, orderDirection);
+        queryBuilder.orderBy(orderByField, sortDirection);
 
         // Apply pagination
         const pageSize = searchRequest.pageSize || 10;

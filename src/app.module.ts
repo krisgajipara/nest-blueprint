@@ -69,22 +69,22 @@ export class AppModule {
         consumer
             .apply(AsyncContextMiddleware)
             .forRoutes({
-                path: "*",
+                path: "*path",
                 method: RequestMethod.ALL
             })
             .apply(LanguageMiddleware)
             .forRoutes({
-                path: "*",
+                path: "*path",
                 method: RequestMethod.ALL
             })
             .apply(AuditMiddleware)
             .forRoutes({
-                path: "*",
+                path: "*path",
                 method: RequestMethod.ALL
             })
             .apply(TenantContextMiddleware)
             .forRoutes({
-                path: "*",
+                path: "*path",
                 method: RequestMethod.ALL
             });
     }

@@ -68,11 +68,11 @@ export class UserRepository extends TenantAwareRepository<User> {
         const orderByField = SORT_MAP[searchRequest.sortBy] ?? "user.createdAt";
 
         // Resolve direction safely
-        const orderDirection =
+        const sortDirection =
             searchRequest.sortDirection === SortDirection.ASC ? SortDirection.ASC : SortDirection.DESC;
 
         // Apply order
-        qb.orderBy(orderByField, orderDirection);
+        qb.orderBy(orderByField, sortDirection);
 
         const pageSize = searchRequest.pageSize || 10;
         const pageNumber = searchRequest.pageNumber || 1;
