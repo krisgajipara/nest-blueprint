@@ -1,6 +1,15 @@
 import { SecretsManager } from "aws-sdk";
 
+export function isAwsDisabled(): boolean {
+    return process.env.AWS_DISABLED === "true";
+}
+
 export async function preloadSecrets() {
+    if (isAwsDisabled()) {
+        console.warn("AWS_DISABLED=true, skipping AWS Secrets Manager preload");
+        return;
+    }
+
     const region = process.env.AWS_REGION || "us-east-1";
     const secretId = process.env.AWS_SECRET_ID;
 

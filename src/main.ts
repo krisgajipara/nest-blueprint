@@ -15,13 +15,13 @@ import { useContainer, Validator } from "class-validator";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
-import { preloadSecrets } from "libs/@anvix/server-core/utilities/app-aws-secrets.utility";
+import { isAwsDisabled, preloadSecrets } from "libs/@anvix/server-core/utilities/app-aws-secrets.utility";
 import { AppModule } from "./app.module";
 import { TenantModule } from "./modules/tenant/tenant.module";
 
 async function bootstrap() {
-    // Load AWS secrets if platform type is Production
-    if (process.env.ENVIRONMENT === "production") {
+    // Load AWS secrets if platform type is Production (skipped when AWS_DISABLED=true)
+    if (process.env.ENVIRONMENT === "production" && !isAwsDisabled()) {
         await preloadSecrets();
     }
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {

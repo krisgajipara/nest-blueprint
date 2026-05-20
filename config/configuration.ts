@@ -49,10 +49,11 @@ export const configuration = () => {
         },
 
         aws_s3: {
+            disabled: process.env.AWS_DISABLED === "true",
             access_key_id: process.env.AWS_ACCESS_KEY_ID,
             secret_access_key: process.env.AWS_SECRET_ACCESS_KEY,
-            private_bucket_name: process.env.AWS_PRIVATE_BUCKET_NAME,
-            region: process.env.AWS_REGION
+            private_bucket_name: process.env.AWS_PRIVATE_BUCKET_NAME || "local-stub-bucket",
+            region: process.env.AWS_REGION || "us-east-1"
         },
 
         app: {

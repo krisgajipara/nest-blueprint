@@ -24,9 +24,22 @@ export const validationSchema = Joi.object({
     EMAIL_PASS: Joi.string().required(),
     EMAIL_PORT: Joi.number().default(2525),
     EMAIL_SECURE: Joi.boolean().default(false),
-    AWS_ACCESS_KEY_ID: Joi.string().required(),
-    AWS_SECRET_ACCESS_KEY: Joi.string().required(),
-    AWS_PRIVATE_BUCKET_NAME: Joi.string().required(),
+    AWS_DISABLED: Joi.string().valid("true", "false").default("false"),
+    AWS_ACCESS_KEY_ID: Joi.when("AWS_DISABLED", {
+        is: "true",
+        then: Joi.string().optional().allow(""),
+        otherwise: Joi.string().required()
+    }),
+    AWS_SECRET_ACCESS_KEY: Joi.when("AWS_DISABLED", {
+        is: "true",
+        then: Joi.string().optional().allow(""),
+        otherwise: Joi.string().required()
+    }),
+    AWS_PRIVATE_BUCKET_NAME: Joi.when("AWS_DISABLED", {
+        is: "true",
+        then: Joi.string().optional().allow(""),
+        otherwise: Joi.string().required()
+    }),
     OTP_EXPIRE_TIME: Joi.number().default(15),
     OTP_ENABLED: Joi.boolean().default(false),
     DOC_URL: Joi.string().default("https://aws-s3.bucket.com/"),

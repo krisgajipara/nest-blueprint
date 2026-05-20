@@ -4,6 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import * as https from "https";
 
 interface S3ConfigInterface {
+    disabled?: boolean;
     access_key_id: string;
     secret_access_key: string;
     private_bucket_name: string;
@@ -17,12 +18,17 @@ interface S3ConfigInterface {
 @Injectable()
 export class AppS3Service {
     public readonly S3Config: S3ConfigInterface;
-    private readonly s3Client: S3;
+    private readonly s3Client: S3 | null;
+    private readonly awsDisabled: boolean;
     private readonly logger = new Logger(AppS3Service.name);
 
     constructor(private readonly configService: ConfigService) {
         this.S3Config = this.configService.get("aws_s3");
-        this.s3Client = this.getS3Client();
+        this.awsDisabled = this.S3Config?.disabled === true;
+        this.s3Client = this.awsDisabled ? null : this.getS3Client();
+        if (this.awsDisabled) {
+            this.logger.warn("AWS_DISABLED=true — S3 operations are stubbed (no AWS calls)");
+        }
     }
 
     public get privateBucketName(): string {
@@ -42,6 +48,10 @@ export class AppS3Service {
         });
     }
 
+    private stubLocation(bucket: string, key: string): string {
+        return `stub://local/${bucket}/${key}`;
+    }
+
     /**
       * Upload images on S3 bucket
       * @param file = Image file buffer
@@ -51,6 +61,15 @@ export class AppS3Service {
       */
     async uploadS3(file, bucket: string, name: string, mimeType: string) {
         this.logger.debug(`Uploading file ${name} to bucket ${bucket}`);
+        if (this.awsDisabled) {
+            this.logger.debug(`[stub] File uploaded: ${this.stubLocation(bucket, name)}`);
+            return {
+                Location: this.stubLocation(bucket, name),
+                Key: name,
+                Bucket: bucket,
+                ETag: '"stub"'
+            };
+        }
         const params = {
             Bucket: bucket,
             Key: name,
@@ -76,6 +95,10 @@ export class AppS3Service {
      */
     async deleteFileFromS3(key: string, bucketName: string) {
         this.logger.debug(`Deleting file ${key} from bucket ${bucketName}`);
+        if (this.awsDisabled) {
+            this.logger.debug(`[stub] Skipped delete for ${this.stubLocation(bucketName, key)}`);
+            return;
+        }
         const params = {
             Bucket: bucketName,
             Key: key
@@ -93,6 +116,9 @@ export class AppS3Service {
      */
     async generatePresignedUrl(key: string, expires: number, bucketName: string, contentType = null) {
         this.logger.debug(`Generating presigned URL for ${key} in bucket ${bucketName}`);
+        if (this.awsDisabled) {
+            return this.stubLocation(bucketName, key);
+        }
         const params = {
             Bucket: bucketName,
             Key: key,
