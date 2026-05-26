@@ -89,6 +89,21 @@ consumer
 
 `AsyncContextMiddleware` must run before `TenantContextMiddleware`, because tenant context is stored in `AsyncLocalStorage`.
 
+## Global TenantGuard
+
+All routes require a valid `x-tenant` or `x-tenant-id` header unless opted out with a decorator. The guard is registered globally (`APP_GUARD`), so controllers do not need `@UseGuards(TenantGuard)` on every endpoint.
+
+| Decorator | Use for |
+| --- | --- |
+| `@TenantApi()` | Entire tenant module (cross-tenant / product-owner APIs, public subdomain resolve) |
+| `@AllowWithoutTenant()` | Other public routes (health, auth login/register/OTP, profiler) |
+
+The guard checks that:
+
+1. A tenant header is present (unless exempt).
+2. `TenantContextMiddleware` validated the tenant and set `AsyncContextService` tenant context.
+3. Header tenant ID matches the validated context tenant ID.
+
 ## Tenant Header
 
 `TenantContextMiddleware` reads tenant ID from either header:

@@ -14,7 +14,7 @@ import {
 } from "@business-core-modules";
 import { AppResponse } from "@business-core-dto";
 import { SuccessConstant } from "@core-constants";
-import { ApiResponseStatus, GetUser } from "@core-custom-decorators";
+import { AllowWithoutTenant, ApiResponseStatus, GetUser } from "@core-custom-decorators";
 import { JwtAuthGuard } from "@core-custom-guards";
 import { User } from "@core-database";
 import { Body, Controller, Get, HttpStatus, Post, Put, UseGuards } from "@nestjs/common";
@@ -35,6 +35,7 @@ export class AuthController {
     constructor(private readonly authService: AuthService) { }
 
     @Post("login")
+    @AllowWithoutTenant()
     @ApiResponseStatus(
         "User login with email and password",
         [HttpStatus.OK, HttpStatus.BAD_REQUEST, HttpStatus.UNAUTHORIZED],
@@ -46,6 +47,7 @@ export class AuthController {
     }
 
     @Post("register")
+    @AllowWithoutTenant()
     @ApiResponseStatus(
         "Register a new user account",
         [HttpStatus.CREATED, HttpStatus.BAD_REQUEST, HttpStatus.CONFLICT],
@@ -56,6 +58,7 @@ export class AuthController {
     }
 
     @Post("otp-verify")
+    @AllowWithoutTenant()
     @ApiResponseStatus(
         "Verify OTP for login or registration",
         [HttpStatus.OK, HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND],
@@ -67,6 +70,7 @@ export class AuthController {
     }
 
     @Post("otp-left-time")
+    @AllowWithoutTenant()
     @ApiResponseStatus(
         "Get remaining time before OTP expires",
         [HttpStatus.OK, HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND],
@@ -78,6 +82,7 @@ export class AuthController {
     }
 
     @Post("resend-otp")
+    @AllowWithoutTenant()
     @ApiResponseStatus(
         "Resend OTP to user email",
         [HttpStatus.OK, HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND],
@@ -99,6 +104,7 @@ export class AuthController {
     }
 
     @Post("forgot-password")
+    @AllowWithoutTenant()
     @ApiResponseStatus(
         "Initiate password reset process",
         [HttpStatus.OK, HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND, HttpStatus.NOT_ACCEPTABLE],
@@ -109,6 +115,7 @@ export class AuthController {
     }
 
     @Post("reset-password")
+    @AllowWithoutTenant()
     @ApiResponseStatus(
         "Reset password using valid reset token",
         [HttpStatus.OK, HttpStatus.BAD_REQUEST, HttpStatus.UNAUTHORIZED, HttpStatus.NOT_FOUND],

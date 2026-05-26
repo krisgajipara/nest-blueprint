@@ -9,7 +9,7 @@ import {
     UpdateTenantRequestDto
 } from "@business-core-modules";
 import { MODULE_CONSTANTS, PERMISSION_CONSTANTS } from "@core-constants";
-import { ApiResponseStatus, RequirePermissions } from "@core-custom-decorators";
+import { ApiResponseStatus, RequirePermissions, TenantApi } from "@core-custom-decorators";
 import { RoleGuard } from "@core-custom-guards";
 import { ModuleNames } from "@core-enums";
 import { imageFileFilter, MapToModuleName } from "@core-utilities";
@@ -35,6 +35,7 @@ import { Request } from "express";
 const TENANT_MODULE_NAME = MapToModuleName(ModuleNames.TENANT);
 
 @ApiTags("Tenants")
+@TenantApi()
 @Controller("tenants")
 export class TenantController {
     constructor(

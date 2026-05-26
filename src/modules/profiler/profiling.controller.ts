@@ -1,8 +1,10 @@
+import { AllowWithoutTenant } from "@core-custom-decorators";
 import { ApiProfile, ProfilerService } from "@core-shared-modules";
 import { Controller, Get, Header, Post } from "@nestjs/common";
 
 import { ApiOperation, ApiResponse } from "@nestjs/swagger";
 
+@AllowWithoutTenant()
 @Controller()
 export class ProfilerController {
     constructor(private readonly profilerService: ProfilerService) {}

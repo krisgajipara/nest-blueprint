@@ -11,6 +11,7 @@ import {
 import { Validator } from "class-validator";
 
 import { AppCacheModule, AppPermissionModule, SharedModule } from "@core-shared-modules";
+import { TenantGuard } from "@core-custom-guards";
 import { MiddlewareConsumer, Module, RequestMethod } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
@@ -60,6 +61,10 @@ import { UserModule } from "./modules/user/user.module";
         {
             provide: APP_GUARD,
             useClass: ThrottlerGuard
+        },
+        {
+            provide: APP_GUARD,
+            useClass: TenantGuard
         },
         AllHttpExceptionFilter
     ]

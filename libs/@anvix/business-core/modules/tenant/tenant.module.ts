@@ -1,4 +1,4 @@
-import { AuthRoleGuard, JwtAuthGuard, RoleGuard } from "@core-custom-guards";
+import { AuthRoleGuard, JwtAuthGuard, RoleGuard, TenantGuard } from "@core-custom-guards";
 import { Tenant, TenantSubscriber, Token } from "@core-database";
 import { AsyncContextService } from "@core-generic-services";
 import { Global, Module } from "@nestjs/common";
@@ -26,7 +26,8 @@ import { TenantService } from "./tenant.service";
         // Guards
         AuthRoleGuard,
         JwtAuthGuard,
-        RoleGuard
+        RoleGuard,
+        TenantGuard
     ],
     exports: [
         AsyncContextService,
@@ -35,6 +36,7 @@ import { TenantService } from "./tenant.service";
         AuthRoleGuard,
         JwtAuthGuard,
         RoleGuard,
+        TenantGuard,
         TypeOrmModule
     ]
 })
