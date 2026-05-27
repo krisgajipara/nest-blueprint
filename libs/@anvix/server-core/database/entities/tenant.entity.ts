@@ -1,6 +1,7 @@
+import { ITenantConfig } from "@core-interfaces";
+import { TenantStatus } from "@core-enums";
 import { Column, Entity, Index } from "typeorm";
 import { BaseSystemModifiableEntity } from "../base-entities/base-system-modifiable-entity";
-import { TenantStatus } from "@core-enums";
 
 /**
  * Tenant entity representing a multi-tenant organization
@@ -32,7 +33,7 @@ export class Tenant extends BaseSystemModifiableEntity {
         nullable: true,
         default: {}
     })
-    config: Record<string, any>;
+    config: ITenantConfig;
 
     @Column({
         type: "varchar",

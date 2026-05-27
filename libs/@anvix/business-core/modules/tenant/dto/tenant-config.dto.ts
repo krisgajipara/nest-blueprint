@@ -5,11 +5,12 @@ import {
     ValidateMaxLength
 } from "@core-custom-validators";
 import { FieldTypeEnum } from "@core-enums";
+import type { ITenantConfig, ITenantFeatureFlags, ITenantMetadata, ITenantTheme } from "@core-interfaces";
 
 /**
  * Theme-specific configuration that tenants can override to customize branding.
  */
-export class TenantThemeDto {
+export class TenantThemeDto implements ITenantTheme {
     @ApiPropertyOptional({
         description: "Primary brand color (hex, rgb, etc.)",
         example: "#1f2937"
@@ -20,24 +21,6 @@ export class TenantThemeDto {
     primaryColor?: string;
 
     @ApiPropertyOptional({
-        description: "Secondary brand color used for accents/interactions",
-        example: "#3b82f6"
-    })
-    @ValidateOptional()
-    @ValidateType({ constraints: { field: "secondaryColor", type: FieldTypeEnum.String } })
-    @ValidateMaxLength(64, { constraints: { field: "secondaryColor" } })
-    secondaryColor?: string;
-
-    @ApiPropertyOptional({
-        description: "Text color that contrasts with the brand background",
-        example: "#ffffff"
-    })
-    @ValidateOptional()
-    @ValidateType({ constraints: { field: "textColor", type: FieldTypeEnum.String } })
-    @ValidateMaxLength(64, { constraints: { field: "textColor" } })
-    textColor?: string;
-
-    @ApiPropertyOptional({
         description: "URL to the tenant-specific background or hero image",
         example: "https://cdn.example.com/background.png"
     })
@@ -45,44 +28,61 @@ export class TenantThemeDto {
     @ValidateType({ constraints: { field: "backgroundImageUrl", type: FieldTypeEnum.String } })
     @ValidateMaxLength(1024, { constraints: { field: "backgroundImageUrl" } })
     backgroundImageUrl?: string;
+}
 
-    @ApiPropertyOptional({
-        description: "Font family override for tenant branding",
-        example: "Inter, system-ui, sans-serif"
-    })
+/**
+ * Locale and timezone for the tenant.
+ */
+export class TenantMetadataDto implements ITenantMetadata {
+    @ApiPropertyOptional({ description: "Default locale", example: "en" })
     @ValidateOptional()
-    @ValidateType({ constraints: { field: "fontFamily", type: FieldTypeEnum.String } })
-    @ValidateMaxLength(256, { constraints: { field: "fontFamily" } })
-    fontFamily?: string;
+    @ValidateType({ constraints: { field: "locale", type: FieldTypeEnum.String } })
+    @ValidateMaxLength(16, { constraints: { field: "locale" } })
+    locale?: string;
+
+    @ApiPropertyOptional({ description: "IANA timezone", example: "UTC" })
+    @ValidateOptional()
+    @ValidateType({ constraints: { field: "timezone", type: FieldTypeEnum.String } })
+    @ValidateMaxLength(64, { constraints: { field: "timezone" } })
+    timezone?: string;
+}
+
+/**
+ * Feature toggles enabled for the tenant.
+ */
+export class TenantFeatureFlagsDto implements ITenantFeatureFlags {
+    @ApiPropertyOptional({ description: "Whether SSO login is enabled", example: false })
+    @ValidateOptional()
+    @ValidateType({ constraints: { field: "enableSso", type: FieldTypeEnum.Boolean } })
+    enableSso?: boolean;
 }
 
 /**
  * Tenant configuration payload used during tenant creation/update.
- * The payload is stored as JSON and can contain dynamic fields such as theme settings, feature toggles, etc.
+ * Stored as jsonb on `tenant.config`.
  */
-export class TenantConfigDto {
+export class TenantConfigDto implements ITenantConfig {
     @ApiPropertyOptional({
-        description: "Theme overrides (colors, fonts, backgrounds) for the tenant",
-        type: TenantThemeDto
+        description: "Theme overrides for the tenant",
+        type: TenantThemeDto,
+        example: { primaryColor: "#1f2937" }
     })
     @ValidateOptional()
     theme?: TenantThemeDto;
 
     @ApiPropertyOptional({
-        description: "Custom metadata or dynamic fields saved per tenant",
-        type: "object",
-        additionalProperties: true,
-        example: { locale: "en", timezone: "Asia/Kolkata" }
+        description: "Locale and timezone",
+        type: TenantMetadataDto,
+        example: { locale: "en", timezone: "UTC" }
     })
     @ValidateOptional()
-    metadata?: Record<string, any>;
+    metadata?: TenantMetadataDto;
 
     @ApiPropertyOptional({
-        description: "Feature toggles and capabilities enabled for the tenant",
-        type: "object",
-        additionalProperties: true,
-        example: { enableSso: true, maxProjects: 20 }
+        description: "Feature toggles for the tenant",
+        type: TenantFeatureFlagsDto,
+        example: { enableSso: false }
     })
     @ValidateOptional()
-    featureFlags?: Record<string, boolean | number | string>;
+    featureFlags?: TenantFeatureFlagsDto;
 }

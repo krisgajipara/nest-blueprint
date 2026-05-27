@@ -3,6 +3,7 @@ import { ValidateEnumType, ValidateMaxLength, ValidateOptional, ValidateType } f
 import { FieldTypeEnum, TenantStatus } from "@core-enums";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { TenantConfigDto } from "../tenant-config.dto";
+import { Transform } from "class-transformer";
 
 /**
  * DTO for updating tenant details
@@ -22,6 +23,7 @@ export class UpdateTenantRequestDto {
 
     @ApiPropertyOptional({ description: "Tenant configuration", type: TenantConfigDto })
     @ValidateOptional()
+    @Transform(({ value }) => JSON.parse(value))
     config?: TenantConfigDto;
 
     @ApiPropertyOptional({ description: "Tenant status", enum: TenantStatus })

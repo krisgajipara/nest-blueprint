@@ -1,6 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { TenantStatus } from "@core-enums";
 import { Tenant } from "@core-database";
+import { TenantStatus } from "@core-enums";
+import type { ITenantConfig } from "@core-interfaces";
+import { TenantConfigDto } from "../tenant-config.dto";
 
 /**
  * Response DTO for full tenant data
@@ -40,10 +42,10 @@ export class TenantResponseDto {
     subdomain: string;
 
     @ApiProperty({
-        description: "Tenant configuration (theme, colors, etc.)",
-        type: Object
+        description: "Tenant configuration (theme, metadata, feature flags)",
+        type: TenantConfigDto
     })
-    config: any;
+    config: ITenantConfig;
 
     @ApiProperty({
         description: "Tenant logo URL",

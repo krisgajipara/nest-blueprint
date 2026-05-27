@@ -1,5 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Tenant } from "@core-database";
+import type { ITenantConfig } from "@core-interfaces";
+import { TenantConfigDto } from "../tenant-config.dto";
 
 /**
  * Public response DTO for tenant resolution by subdomain
@@ -42,11 +44,11 @@ export class TenantPublicResponseDto {
     subdomain?: string;
 
     @ApiProperty({
-        description: "Tenant configuration (theme, colors, etc.)",
-        type: Object,
+        description: "Tenant configuration (theme, metadata, feature flags)",
+        type: TenantConfigDto,
         required: false
     })
-    config?: any;
+    config?: ITenantConfig;
 
     @ApiProperty({
         description: "Tenant logo URL",
