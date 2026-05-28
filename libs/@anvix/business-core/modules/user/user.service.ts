@@ -349,6 +349,13 @@ export class UserService {
     }
 
     /**
+     * Find users by IDs with role loaded (for service-staff assignment validation)
+     */
+    async findStaffUsersByIds(ids: string[]): Promise<User[]> {
+        return this.userRepository.findByIdsWithRole(ids);
+    }
+
+    /**
      * Find multiple users by emails
      * @param emails - Array of emails
      * @returns Promise of User array

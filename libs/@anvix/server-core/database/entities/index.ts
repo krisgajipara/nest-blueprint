@@ -16,4 +16,7 @@ export * from "./role.entity";
 export * from "./tenant.entity";
 export * from "./token.entity";
 export * from "./user.entity";
+export * from "./service-category.entity";
+export * from "./service.entity";
+export * from "./service-staff-mapping.entity";
 

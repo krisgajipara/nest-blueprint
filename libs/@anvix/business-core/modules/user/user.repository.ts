@@ -122,6 +122,27 @@ export class UserRepository extends TenantAwareRepository<User> {
      * @param id - User ID
      * @returns Promise of User or null
      */
+    async findByIdsWithRole(ids: string[]): Promise<User[]> {
+        if (!ids.length) {
+            return [];
+        }
+
+        return this.createQueryBuilder("user")
+            .leftJoinAndSelect("user.role", "role")
+            .select([
+                "user.id",
+                "user.firstName",
+                "user.lastName",
+                "user.email",
+                "user.userType",
+                "user.status",
+                "role.id",
+                "role.systemRoleType"
+            ])
+            .andWhere("user.id IN (:...ids)", { ids })
+            .getMany();
+    }
+
     async findById(id: string): Promise<User | null> {
         return this.createQueryBuilder("user")
             .select([

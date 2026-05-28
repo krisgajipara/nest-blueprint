@@ -5,7 +5,17 @@ export const MODULE_CONSTANTS = {
     USER: "User",
     AUTH: "Auth",
     ROLE: "Role",
-    TENANT: "Tenant"
+    TENANT: "Tenant",
+    SERVICE_CATEGORY: "ServiceCategory",
+    SERVICE: "Service"
+} as const;
+
+/** Modules exposed in salon-admin role management (tenant module is platform-only) */
+export const SALON_ROLE_MODULE_CONSTANTS = {
+    USER: "User",
+    ROLE: "Role",
+    SERVICE_CATEGORY: "ServiceCategory",
+    SERVICE: "Service"
 } as const;
 
 export const DEFAULT_MODULE_CONSTANTS = {
@@ -45,13 +55,50 @@ export const DEFAULT_PERMISSIONS: RolePermission[] = [
             edit: true,
             delete: true
         }
+    },
+    {
+        module: MODULE_CONSTANTS.SERVICE_CATEGORY,
+        permissions: {
+            read: true,
+            write: true,
+            edit: true,
+            delete: true
+        }
+    },
+    {
+        module: MODULE_CONSTANTS.SERVICE,
+        permissions: {
+            read: true,
+            write: true,
+            edit: true,
+            delete: true
+        }
     }
 ];
 
 /**
- * Get all available modules
+ * Modules assignable via salon-admin role management UI
+ */
+export function getSalonRoleModules(): string[] {
+    return Object.values(SALON_ROLE_MODULE_CONSTANTS);
+}
+
+/**
+ * Strips platform-only modules (e.g. Tenant) from role permission payloads
+ */
+export function filterSalonRolePermissions(permissions: RolePermission[]): RolePermission[] {
+    if (!permissions?.length) {
+        return [];
+    }
+
+    const allowedModules = new Set<string>(Object.values(SALON_ROLE_MODULE_CONSTANTS));
+    return permissions.filter((entry) => entry?.module && allowedModules.has(entry.module));
+}
+
+/**
+ * Get all available modules for salon role management
  * @returns Array of module names
  */
 export function getAvailableModules(): string[] {
-    return Object.values(DEFAULT_MODULE_CONSTANTS);
+    return getSalonRoleModules();
 }

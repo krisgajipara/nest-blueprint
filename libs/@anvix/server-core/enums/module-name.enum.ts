@@ -16,4 +16,7 @@ export enum ModuleNames {
     ROLE = "Role",
 
     TENANT = "Tenant",
+
+    SERVICE_CATEGORY = "ServiceCategory",
+    SERVICE = "Service"
 }

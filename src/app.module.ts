@@ -24,6 +24,8 @@ import { AppController } from "./app.controller";
 import { AuthModule } from "./modules/auth/auth.module";
 import { ProfilerModule } from "./modules/profiler/profiling.module";
 import { RoleModule } from "./modules/role/role.module";
+import { ServiceModule } from "./modules/service/service.module";
+import { ServiceCategoryModule } from "./modules/service-category/service-category.module";
 import { TenantModule } from "./modules/tenant/tenant.module";
 import { UserModule } from "./modules/user/user.module";
 
@@ -52,7 +54,9 @@ import { UserModule } from "./modules/user/user.module";
         TenantModule, // Global module providing AsyncContextService - must be loaded first
         AuthModule,
         UserModule,
-        RoleModule
+        RoleModule,
+        ServiceCategoryModule,
+        ServiceModule
     ],
     controllers: [AppController],
     providers: [

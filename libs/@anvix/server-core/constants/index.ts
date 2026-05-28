@@ -4,3 +4,4 @@ export * from "./entity.constant";
 export * from "./permissions.constant";
 export * from "./success.constant";
 export * from "./tenant.constant";
+export * from "./service-catalog-seed.constant";

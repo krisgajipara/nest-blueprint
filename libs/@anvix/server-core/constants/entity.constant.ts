@@ -23,3 +23,13 @@ export const RoleEntityConstant = {
     NameMaxLength: 100,
     DescriptionMaxLength: 500
 };
+
+export const ServiceCategoryEntityConstant = {
+    NameMaxLength: 100
+};
+
+export const ServiceEntityConstant = {
+    NameMaxLength: 150,
+    ImageMaxLength: 500,
+    DescriptionMaxLength: 2000
+};

@@ -10,6 +10,7 @@ import { EntityManager } from "typeorm";
 import { v4 as uuidv4 } from "uuid";
 import { CreateTenantRequestDto, ListTenantRequestDto, UpdateTenantRequestDto } from "./dto";
 import { TenantDropdownResponseDto, TenantPublicResponseDto, TenantResponseDto } from "./dto/response";
+import { seedServiceCatalogForTenant } from "../service-catalog/seed-service-catalog.helper";
 import { TenantRepository } from "./tenant.repository";
 import { extname } from "path";
 
@@ -119,7 +120,7 @@ export class TenantService {
             delete: true
         };
 
-        const allModules = ["User", "Auth", "Role", "Tenant"];
+        const allModules = ["User", "Auth", "Role", "ServiceCategory", "Service"];
 
         // Permissions for Super Admin (All modules)
         const superAdminPermissions = allModules.map((module) => ({ module, permissions: commonPermissions }));
@@ -271,6 +272,8 @@ export class TenantService {
                     createTenantDto.password
                 );
             }
+
+            await seedServiceCatalogForTenant(manager, savedTenant.id);
 
             const response = new TenantResponseDto(savedTenant);
             return new AppResponse(SuccessConstant.AddSuccessAction, response, {

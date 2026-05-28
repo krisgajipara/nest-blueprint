@@ -5,7 +5,14 @@ import {
     CommonSearchResponseDto
 } from "@business-core-dto";
 import { ListRoleRequestDto, UpdateRoleRequestDto } from "@business-core-modules";
-import { CacheKeyConstant, CacheModulePrefix, DEFAULT_PERMISSIONS, getAvailableModules, SuccessConstant } from "@core-constants";
+import {
+    CacheKeyConstant,
+    CacheModulePrefix,
+    DEFAULT_PERMISSIONS,
+    filterSalonRolePermissions,
+    getAvailableModules,
+    SuccessConstant
+} from "@core-constants";
 import { Role, RolePermission, User } from "@core-database";
 import { ModuleNames, SystemRoleType } from "@core-enums";
 import { AppCacheService, AppPermissionService } from "@core-shared-modules";
@@ -57,12 +64,13 @@ export class RoleService {
         const role = this.roleRepository.create({
             name,
             description,
-            permissions,
+            permissions: filterSalonRolePermissions(permissions),
             isActive: true,
             systemRoleType: null
         });
 
         const savedRole = await this.roleRepository.save(role);
+        savedRole.permissions = filterSalonRolePermissions(savedRole.permissions);
 
         // Clear all list caches for this module since new role might affect dropdowns
         await this.appCacheService.clearListCachesByModule(this.ROLE_CACHE_MODULE);
@@ -92,14 +100,13 @@ export class RoleService {
         if (updateRoleDto.description !== undefined) {
             role.description = updateRoleDto.description;
         }
+        role.name = updateRoleDto.name ?? role.name;
         if (updateRoleDto.permissions !== undefined) {
-            role.permissions = updateRoleDto.permissions;
+            role.permissions = filterSalonRolePermissions(updateRoleDto.permissions);
         }
 
-        role.name = updateRoleDto.name ?? role.name;
-        role.permissions = updateRoleDto.permissions ?? role.permissions;
-
         const updatedRole = await this.roleRepository.save(role);
+        updatedRole.permissions = filterSalonRolePermissions(updatedRole.permissions);
 
         // Clear detail cache for this role
         await this.appCacheService.del(GetCacheKey(this.ROLE_CACHE_MODULE, id));
@@ -127,6 +134,7 @@ export class RoleService {
         const cachedData = await this.appCacheService.get<RoleDetailResponseDto>(cacheKey);
         if (cachedData) {
             this.#logger.debug(`${logPrefix} : Role found in cache`);
+            cachedData.permissions = filterSalonRolePermissions(cachedData.permissions);
             return new AppResponse(SuccessConstant.DetailFetch, cachedData, {
                 module: MapToModuleName(ModuleNames.ROLE)
             });
@@ -136,6 +144,8 @@ export class RoleService {
         if (!role) {
             throw new NotFoundException({ message: "ERR_MODULE_NOT_FOUND", module: MapToModuleName(ModuleNames.ROLE) });
         }
+
+        role.permissions = filterSalonRolePermissions(role.permissions);
 
         // Map to detail response DTO (with permissions)
         const roleDetail = new RoleDetailResponseDto(role);

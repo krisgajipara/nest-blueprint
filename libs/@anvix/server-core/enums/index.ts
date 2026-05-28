@@ -12,3 +12,5 @@ export * from "./show-payment-status.enum";
 export * from "./module-name.enum";
 export * from "./system-role-type.enum";
 export * from "./tenant-status.enum";
+export * from "./service-gender.enum";
+export * from "./staff-skill-level.enum";

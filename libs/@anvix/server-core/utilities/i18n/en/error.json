@@ -58,5 +58,11 @@
     "ERR_FOLLOW_UP_ALREADY_SENT": "Follow-up has already been sent for this user plan.",
     "ERR_INTERNAL_SERVER_ERROR": "An internal server error occurred. Please try again later.",
     "ERR_NEGATIVE_QUANTITY": "Quantity cannot be negative.",
-    "ERR_SUBDOMAIN_EXISTS": "This subdomain is already in use."
+    "ERR_SUBDOMAIN_EXISTS": "This subdomain is already in use.",
+    "ERR_SERVICE_CATEGORY_EXISTS": "A service category with this name already exists.",
+    "ERR_SERVICE_EXISTS": "A service with this name already exists in this category.",
+    "ERR_SERVICE_CATEGORY_INACTIVE": "The selected service category is inactive.",
+    "ERR_SERVICE_CATEGORY_HAS_SERVICES": "Cannot delete a category that still has services.",
+    "ERR_SERVICE_STAFF_MAPPING_EXISTS": "This staff member is already assigned to the service.",
+    "ERR_USER_NOT_STAFF": "Only active staff members can be assigned to a service."
 }
