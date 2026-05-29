@@ -27,6 +27,8 @@ import { RoleModule } from "./modules/role/role.module";
 import { ServiceModule } from "./modules/service/service.module";
 import { ServiceCategoryModule } from "./modules/service-category/service-category.module";
 import { TenantModule } from "./modules/tenant/tenant.module";
+import { SkillModule } from "./modules/skill/skill.module";
+import { StylistModule } from "./modules/stylist/stylist.module";
 import { UserModule } from "./modules/user/user.module";
 
 @Module({
@@ -54,6 +56,8 @@ import { UserModule } from "./modules/user/user.module";
         TenantModule, // Global module providing AsyncContextService - must be loaded first
         AuthModule,
         UserModule,
+        StylistModule,
+        SkillModule,
         RoleModule,
         ServiceCategoryModule,
         ServiceModule

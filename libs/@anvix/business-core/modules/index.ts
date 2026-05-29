@@ -5,3 +5,7 @@ export * from "./tenant";
 export * from "./service-category";
 export * from "./service";
 export * from "./service-staff-mapping";
+export * from "./stylist";
+export * from "./skill";
+export * from "./stylist-skill-mapping";
+export * from "./service-skill-mapping";

@@ -9,7 +9,11 @@ import { ConfigService } from "@nestjs/config";
 import { extname } from "path";
 import { v4 as uuidv4 } from "uuid";
 import { ServiceCategoryRepository } from "../service-category/service-category.repository";
+import { ServiceSkillMappingService } from "../service-skill-mapping/service-skill-mapping.service";
+import { ServiceStaffMappingRepository } from "../service-staff-mapping/service-staff-mapping.repository";
+import { SkillSummaryDto } from "../skill/dto/response/skill-summary.response.dto";
 import {
+    AssignedStaffSummaryDto,
     CreateServiceRequestDto,
     ListServiceRequestDto,
     ServiceResponseDto,
@@ -24,6 +28,8 @@ export class ServiceService {
     constructor(
         private readonly serviceRepository: ServiceRepository,
         private readonly serviceCategoryRepository: ServiceCategoryRepository,
+        private readonly serviceStaffMappingRepository: ServiceStaffMappingRepository,
+        private readonly serviceSkillMappingService: ServiceSkillMappingService,
         private readonly configService: ConfigService,
         private readonly s3Utility: AppS3Service
     ) {}
@@ -63,7 +69,24 @@ export class ServiceService {
     ): Promise<AppResponse<CommonSearchResponseDto<ServiceResponseDto>>> {
         const [services, total] = await this.serviceRepository.findServices(searchRequest);
         const imageBaseUrl = this.getImageBaseUrl();
-        const results = services.map((service) => this.toResponse(service, imageBaseUrl));
+        const includeAssignedStaff = searchRequest.includeAssignedStaff !== false;
+        const includeSkills = searchRequest.includeSkills !== false;
+        const serviceIds = services.map((service) => service.id);
+        const assignmentsByServiceId = includeAssignedStaff
+            ? await this.loadAssignmentsByServiceIds(serviceIds, searchRequest.assignmentIsActive)
+            : new Map<string, AssignedStaffSummaryDto[]>();
+        const skillsByServiceId = includeSkills
+            ? await this.serviceSkillMappingService.loadSkillSummariesByServiceIds(serviceIds)
+            : new Map<string, SkillSummaryDto[]>();
+
+        const results = services.map((service) =>
+            this.toResponse(
+                service,
+                imageBaseUrl,
+                assignmentsByServiceId.get(service.id),
+                skillsByServiceId.get(service.id)
+            )
+        );
         const response = new CommonSearchResponseDto(
             results,
             searchRequest.pageSize || 10,
@@ -85,9 +108,15 @@ export class ServiceService {
             });
         }
 
-        return new AppResponse(SuccessConstant.DetailFetch, this.toResponse(service), {
-            module: MapToModuleName(ModuleNames.SERVICE)
-        });
+        const assignments = await this.loadAssignmentsByServiceIds([id]);
+        const skillsMap = await this.serviceSkillMappingService.loadSkillSummariesByServiceIds([id]);
+        return new AppResponse(
+            SuccessConstant.DetailFetch,
+            this.toResponse(service, undefined, assignments.get(id), skillsMap.get(id)),
+            {
+                module: MapToModuleName(ModuleNames.SERVICE)
+            }
+        );
     }
 
     async update(id: string, dto: UpdateServiceRequestDto, imageFile?: any): Promise<AppResponse<ServiceResponseDto>> {
@@ -187,8 +216,38 @@ export class ServiceService {
         });
     }
 
-    private toResponse(service: Service, imageBaseUrl?: string): ServiceResponseDto {
-        return new ServiceResponseDto(service, imageBaseUrl ?? this.getImageBaseUrl());
+    private async loadAssignmentsByServiceIds(
+        serviceIds: string[],
+        assignmentIsActive?: boolean
+    ): Promise<Map<string, AssignedStaffSummaryDto[]>> {
+        const mappings = await this.serviceStaffMappingRepository.findAssignmentsByServiceIds(
+            serviceIds,
+            assignmentIsActive
+        );
+        const map = new Map<string, AssignedStaffSummaryDto[]>();
+
+        for (const mapping of mappings) {
+            const summary = new AssignedStaffSummaryDto(mapping);
+            const existing = map.get(mapping.serviceId) ?? [];
+            existing.push(summary);
+            map.set(mapping.serviceId, existing);
+        }
+
+        return map;
+    }
+
+    private toResponse(
+        service: Service,
+        imageBaseUrl?: string,
+        assignedStaff?: AssignedStaffSummaryDto[],
+        skills?: SkillSummaryDto[]
+    ): ServiceResponseDto {
+        return new ServiceResponseDto(
+            service,
+            imageBaseUrl ?? this.getImageBaseUrl(),
+            assignedStaff,
+            skills
+        );
     }
 
     private getImageBaseUrl(): string {

@@ -143,6 +143,8 @@ GET /v1/roles/permissions/default
 | User role | `GET .../users/:userId/role` | — | **TODO: ParseUUIDPipe** | |
 | Defaults | `GET .../permissions/default` | Role form seed | — | — |
 
+**Salon-admin assignable modules (tenant roles):** `User`, `Role`, `ServiceCategory`, `Service`, `Stylist`, `Skill` (not `Tenant`).
+
 ---
 
 ## 3. API integration priority

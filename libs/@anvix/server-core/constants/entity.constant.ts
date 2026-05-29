@@ -6,6 +6,7 @@ export const UserEntityConstant = {
     LastNameMaxLength: 100,
     EmailMaxLength: 50,
     PhoneNumberMaxLength: 15,
+    ExperienceYearsMax: 60,
     PasswordMaxLength: 20,
     PasswordMinLength: 6,
     EncryptedPasswordMaxLength: 250,
@@ -32,4 +33,9 @@ export const ServiceEntityConstant = {
     NameMaxLength: 150,
     ImageMaxLength: 500,
     DescriptionMaxLength: 2000
+};
+
+export const SkillEntityConstant = {
+    NameMaxLength: 100,
+    DescriptionMaxLength: 500
 };

@@ -8,12 +8,13 @@ import {
     ValidateEnumType,
     ValidateType
 } from "@core-custom-validators";
+import { UserEntityConstant } from "@core-constants";
 import {
     FieldTypeEnum,
     UserTypeEnum,
     UserStatus
 } from "@core-enums";
-import { UserEntityConstant } from "@core-constants";
+import { IsInt, IsOptional, Max, Min } from "class-validator";
 
 /**
  * DTO for creating a new user
@@ -104,6 +105,16 @@ export class CreateUserRequestDto {
     @ValidateOptional({ constraints: { field: "User type" } })
     @ValidateEnumType(UserTypeEnum, { constraints: { field: "User type" } })
     userType?: UserTypeEnum;
+
+    @ApiPropertyOptional({
+        description: "Years of professional experience (stylists)",
+        example: 5
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    @Max(UserEntityConstant.ExperienceYearsMax)
+    experienceYears?: number;
 
     @ApiPropertyOptional({
         description: "User's role ID",

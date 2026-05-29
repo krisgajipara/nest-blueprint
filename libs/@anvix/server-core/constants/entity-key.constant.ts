@@ -6,5 +6,8 @@ export enum DatabaseUniqueKey {
     UserEmailUserType = "UK_USER_EMAIL_USER_TYPE",
     ServiceCategoryTenantName = "UK_SERVICE_CATEGORY_TENANT_NAME",
     ServiceTenantCategoryName = "UK_SERVICE_TENANT_CATEGORY_NAME",
-    ServiceStaffMappingTenantServiceStaff = "UK_SERVICE_STAFF_MAPPING_TENANT_SERVICE_STAFF"
+    ServiceStaffMappingTenantServiceStaff = "UK_SERVICE_STAFF_MAPPING_TENANT_SERVICE_STAFF",
+    SkillTenantName = "UK_SKILL_TENANT_NAME",
+    StylistSkillMappingTenantStylistSkill = "UK_STYLIST_SKILL_MAPPING_TENANT_STYLIST_SKILL",
+    ServiceSkillMappingTenantServiceSkill = "UK_SERVICE_SKILL_MAPPING_TENANT_SERVICE_SKILL"
 }

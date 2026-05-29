@@ -19,4 +19,7 @@ export * from "./user.entity";
 export * from "./service-category.entity";
 export * from "./service.entity";
 export * from "./service-staff-mapping.entity";
+export * from "./skill.entity";
+export * from "./stylist-skill-mapping.entity";
+export * from "./service-skill-mapping.entity";
 

@@ -120,7 +120,7 @@ export class TenantService {
             delete: true
         };
 
-        const allModules = ["User", "Auth", "Role", "ServiceCategory", "Service"];
+        const allModules = ["User", "Auth", "Role", "ServiceCategory", "Service", "Stylist", "Skill"];
 
         // Permissions for Super Admin (All modules)
         const superAdminPermissions = allModules.map((module) => ({ module, permissions: commonPermissions }));

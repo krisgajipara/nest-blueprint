@@ -64,5 +64,7 @@
     "ERR_SERVICE_CATEGORY_INACTIVE": "The selected service category is inactive.",
     "ERR_SERVICE_CATEGORY_HAS_SERVICES": "Cannot delete a category that still has services.",
     "ERR_SERVICE_STAFF_MAPPING_EXISTS": "This staff member is already assigned to the service.",
-    "ERR_USER_NOT_STAFF": "Only active staff members can be assigned to a service."
+    "ERR_USER_NOT_STAFF": "Only active stylists can be assigned to a service.",
+    "ERR_SKILL_EXISTS": "A skill with this name already exists.",
+    "ERR_SKILL_IN_USE": "Cannot delete a skill that is assigned to stylists or services."
 }

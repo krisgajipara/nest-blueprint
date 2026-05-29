@@ -9,6 +9,7 @@ import {
 } from "@core-custom-validators";
 import { FieldTypeEnum, UserStatus } from "@core-enums";
 import { ApiPropertyOptional } from "@nestjs/swagger";
+import { IsInt, IsOptional, Max, Min } from "class-validator";
 
 /**
  * DTO for updating user details
@@ -67,6 +68,16 @@ export class UpdateUserRequestDto {
     @ValidateOptional()
     @ValidateType({ constraints: { field: "date of birth", type: FieldTypeEnum.String } })
     dateOfBirth?: string;
+
+    @ApiPropertyOptional({
+        description: "Years of professional experience (stylists)",
+        example: 5
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    @Max(UserEntityConstant.ExperienceYearsMax)
+    experienceYears?: number;
 
     @ApiPropertyOptional({
         description: "User's role ID",

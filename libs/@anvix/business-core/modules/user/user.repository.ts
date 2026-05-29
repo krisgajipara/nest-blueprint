@@ -34,7 +34,8 @@ export class UserRepository extends TenantAwareRepository<User> {
             "user.userType",
             "user.status",
             "user.createdAt",
-            "user.dateOfBirth"
+            "user.dateOfBirth",
+            "user.experienceYears"
         ]);
 
         // Filters
@@ -61,7 +62,8 @@ export class UserRepository extends TenantAwareRepository<User> {
             lastName: "user.lastName",
             email: "user.email",
             createdAt: "user.createdAt",
-            updatedAt: "user.updatedAt"
+            updatedAt: "user.updatedAt",
+            experienceYears: "user.experienceYears"
         };
 
         // Resolve field safely
@@ -140,6 +142,7 @@ export class UserRepository extends TenantAwareRepository<User> {
                 "role.systemRoleType"
             ])
             .andWhere("user.id IN (:...ids)", { ids })
+            .andWhere("user.userType = :userType", { userType: UserTypeEnum.STYLIST })
             .getMany();
     }
 
@@ -154,8 +157,10 @@ export class UserRepository extends TenantAwareRepository<User> {
                 "user.salt",
                 "user.phoneNumber",
                 "user.dateOfBirth",
+                "user.experienceYears",
                 "user.userType",
                 "user.status",
+                "user.roleId",
                 "user.createdAt",
                 "user.updatedAt"
             ])

@@ -70,6 +70,14 @@ export class User extends BaseTenantModifiableEntityWithoutIdentity {
     })
     dateOfBirth: Date | null;
 
+    /** Years of professional experience (primarily for stylists). */
+    @Column({
+        type: "int",
+        name: "experience_years",
+        nullable: true
+    })
+    experienceYears: number | null;
+
     @Column({
         type: "enum",
         enum: UserTypeEnum,

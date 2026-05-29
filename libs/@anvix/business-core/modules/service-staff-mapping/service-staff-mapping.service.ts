@@ -194,7 +194,7 @@ export class ServiceStaffMappingService {
             throw new BadRequestException({ message: "ERR_USER_NOT_STAFF" });
         }
 
-        if (user.userType === UserTypeEnum.PRODUCT_OWNER || user.userType === UserTypeEnum.SUPER_ADMIN) {
+        if (user.userType !== UserTypeEnum.STYLIST) {
             throw new BadRequestException({ message: "ERR_USER_NOT_STAFF" });
         }
 

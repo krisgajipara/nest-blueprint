@@ -106,7 +106,7 @@ When generating module work:
 9. Wire barrel exports and module imports/providers.
 10. Add guards/decorators/permissions with module constants as needed.
 11. Add migrations for schema changes.
-12. Update module docs when tenant/migration/permission behavior changes.
+12. Update module docs when tenant/migration/permission/API behavior changes: module README (**anvix-module-readme**) and matching API flow diagram (**anvix-api-flow-diagram** + [api-flow-diagram-map.md](./anvix-module-readme/api-flow-diagram-map.md)) when controllers or client-facing DTOs change.
 
 ## Critical violations (fix before finish)
 
@@ -135,6 +135,7 @@ Run when practical:
 - [ ] Tenant safety rules applied where needed.
 - [ ] Migration added for schema changes.
 - [ ] Swagger/`ApiResponseStatus` coverage added.
+- [ ] API flow diagram updated when HTTP contract changed (see anvix-module-readme).
 - [ ] Exports and module wiring complete.
 - [ ] Lint/build/test status recorded.
 

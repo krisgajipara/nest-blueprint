@@ -15,8 +15,8 @@ Current migration folders:
 
 ```text
 libs/@anvix/server-core/database/migrations/
-|-- database-changes/                  # Schema migrations
-|   `-- 1699999999999-initial-tenant-setup.ts
+|-- database-changes/                  # Schema migrations (single initial migration)
+|   `-- 1700000000000-InitialSchema.ts
 `-- seeders/                           # Seed data migrations
     `-- 9999999999999-seed-product-owner.ts
 ```

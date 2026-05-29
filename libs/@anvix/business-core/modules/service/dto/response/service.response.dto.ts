@@ -1,6 +1,8 @@
 import { Service, ServiceCategory } from "@core-database";
 import { ServiceGenderEnum } from "@core-enums";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { SkillSummaryDto } from "../../../skill/dto/response/skill-summary.response.dto";
+import { AssignedStaffSummaryDto } from "./assigned-staff-summary.response.dto";
 
 export class ServiceResponseDto {
     @ApiProperty({ description: "Service ID" })
@@ -42,7 +44,24 @@ export class ServiceResponseDto {
     @ApiPropertyOptional({ description: "Updated timestamp" })
     updatedAt?: Date;
 
-    constructor(service: Service, imageBaseUrl?: string) {
+    @ApiPropertyOptional({
+        description: "Stylists assigned to this service (when includeAssignedStaff is enabled)",
+        type: [AssignedStaffSummaryDto]
+    })
+    assignedStaff?: AssignedStaffSummaryDto[];
+
+    @ApiPropertyOptional({
+        description: "Skills linked to this service (admin reference when assigning stylists)",
+        type: [SkillSummaryDto]
+    })
+    skills?: SkillSummaryDto[];
+
+    constructor(
+        service: Service,
+        imageBaseUrl?: string,
+        assignedStaff?: AssignedStaffSummaryDto[],
+        skills?: SkillSummaryDto[]
+    ) {
         this.id = service.id;
         this.categoryId = service.categoryId;
         this.name = service.name;
@@ -60,6 +79,14 @@ export class ServiceResponseDto {
 
         if (service.image && imageBaseUrl) {
             this.imageUrl = `${imageBaseUrl}/services/images/${service.image}`;
+        }
+
+        if (assignedStaff?.length) {
+            this.assignedStaff = assignedStaff;
+        }
+
+        if (skills?.length) {
+            this.skills = skills;
         }
     }
 }

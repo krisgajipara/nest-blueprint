@@ -18,5 +18,7 @@ export enum ModuleNames {
     TENANT = "Tenant",
 
     SERVICE_CATEGORY = "ServiceCategory",
-    SERVICE = "Service"
+    SERVICE = "Service",
+    STYLIST = "Stylist",
+    SKILL = "Skill"
 }

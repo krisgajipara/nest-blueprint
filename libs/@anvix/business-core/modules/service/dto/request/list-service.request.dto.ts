@@ -36,6 +36,24 @@ export class ListServiceRequestDto extends CommonSearchRequestDto {
     assignmentIsActive?: boolean;
 
     @ApiPropertyOptional({
+        description: "Include skills linked to each service in the list response",
+        example: true,
+        default: true
+    })
+    @IsOptional()
+    @IsBoolean()
+    includeSkills?: boolean;
+
+    @ApiPropertyOptional({
+        description: "Include assigned stylists on each service in the list response",
+        example: true,
+        default: true
+    })
+    @IsOptional()
+    @IsBoolean()
+    includeAssignedStaff?: boolean;
+
+    @ApiPropertyOptional({
         description: "Sort by field",
         example: "price",
         enum: ["name", "price", "durationMin", "createdAt", "updatedAt"]

@@ -34,12 +34,44 @@ export class ServiceStaffMappingRepository extends TenantAwareRepository<Service
             "staff.firstName",
             "staff.lastName",
             "staff.email",
-            "staff.status"
+            "staff.status",
+            "staff.experienceYears"
         ]);
         queryBuilder.andWhere("mapping.serviceId = :serviceId", { serviceId });
 
         if (isActive !== undefined) {
             queryBuilder.andWhere("mapping.isActive = :isActive", { isActive });
+        }
+
+        queryBuilder.orderBy("staff.firstName", "ASC");
+        return queryBuilder.getMany();
+    }
+
+    async findAssignmentsByServiceIds(
+        serviceIds: string[],
+        assignmentIsActive?: boolean
+    ): Promise<ServiceStaffMapping[]> {
+        if (!serviceIds.length) {
+            return [];
+        }
+
+        const queryBuilder = this.createQueryBuilder("mapping");
+        queryBuilder.leftJoinAndSelect("mapping.staff", "staff");
+        queryBuilder.select([
+            "mapping.id",
+            "mapping.serviceId",
+            "mapping.staffId",
+            "mapping.skillLevel",
+            "mapping.isActive",
+            "staff.id",
+            "staff.firstName",
+            "staff.lastName",
+            "staff.experienceYears"
+        ]);
+        queryBuilder.andWhere("mapping.serviceId IN (:...serviceIds)", { serviceIds });
+
+        if (assignmentIsActive !== undefined) {
+            queryBuilder.andWhere("mapping.isActive = :assignmentIsActive", { assignmentIsActive });
         }
 
         queryBuilder.orderBy("staff.firstName", "ASC");

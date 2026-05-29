@@ -1,5 +1,5 @@
 import { UserStatus, UserTypeEnum } from "@core-enums";
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 /**
  * Response DTO for user data
@@ -22,6 +22,10 @@ export class UserResponseDto {
         this.createdAt = user.createdAt;
         this.updatedAt = user.updatedAt;
         this.roleId = user.roleId;
+        this.experienceYears =
+            user.experienceYears !== undefined && user.experienceYears !== null
+                ? Number(user.experienceYears)
+                : null;
 
         // Password and salt are intentionally not mapped (excluded from response)
         // idProofUrls and documents would be computed from user entity relationships if needed
@@ -71,6 +75,13 @@ export class UserResponseDto {
         enum: UserTypeEnum
     })
     userType: UserTypeEnum;
+
+    @ApiPropertyOptional({
+        description: "Years of professional experience (stylists)",
+        example: 5,
+        nullable: true
+    })
+    experienceYears: number | null;
 
     @ApiProperty({
         description: "User's role ID",

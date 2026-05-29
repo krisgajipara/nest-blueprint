@@ -7,7 +7,9 @@ export const MODULE_CONSTANTS = {
     ROLE: "Role",
     TENANT: "Tenant",
     SERVICE_CATEGORY: "ServiceCategory",
-    SERVICE: "Service"
+    SERVICE: "Service",
+    STYLIST: "Stylist",
+    SKILL: "Skill"
 } as const;
 
 /** Modules exposed in salon-admin role management (tenant module is platform-only) */
@@ -15,7 +17,9 @@ export const SALON_ROLE_MODULE_CONSTANTS = {
     USER: "User",
     ROLE: "Role",
     SERVICE_CATEGORY: "ServiceCategory",
-    SERVICE: "Service"
+    SERVICE: "Service",
+    STYLIST: "Stylist",
+    SKILL: "Skill"
 } as const;
 
 export const DEFAULT_MODULE_CONSTANTS = {
@@ -67,6 +71,24 @@ export const DEFAULT_PERMISSIONS: RolePermission[] = [
     },
     {
         module: MODULE_CONSTANTS.SERVICE,
+        permissions: {
+            read: true,
+            write: true,
+            edit: true,
+            delete: true
+        }
+    },
+    {
+        module: MODULE_CONSTANTS.STYLIST,
+        permissions: {
+            read: true,
+            write: true,
+            edit: true,
+            delete: true
+        }
+    },
+    {
+        module: MODULE_CONSTANTS.SKILL,
         permissions: {
             read: true,
             write: true,

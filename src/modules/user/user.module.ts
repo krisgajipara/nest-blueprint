@@ -14,6 +14,6 @@ import { UserController } from "./user.controller";
     imports: [TypeOrmModule.forFeature([User]), AppCacheModule, TenantModule],
     controllers: [UserController],
     providers: [UserService, UserRepository],
-    exports: [UserService]
+    exports: [UserService, UserRepository]
 })
 export class UserModule {}
