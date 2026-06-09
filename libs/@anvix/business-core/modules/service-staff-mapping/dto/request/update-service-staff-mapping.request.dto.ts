@@ -1,7 +1,7 @@
-import { ValidateEnumType, ValidateOptional } from "@core-custom-validators";
-import { StaffSkillLevelEnum } from "@core-enums";
+import { ValidateEnumType, ValidateOptional, ValidateType } from "@core-custom-validators";
+import { FieldTypeEnum, StaffSkillLevelEnum } from "@core-enums";
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsOptional } from "class-validator";
+import { IsOptional } from "class-validator";
 
 export class UpdateServiceStaffMappingRequestDto {
     @ApiPropertyOptional({ description: "Skill level", enum: StaffSkillLevelEnum })
@@ -11,6 +11,6 @@ export class UpdateServiceStaffMappingRequestDto {
 
     @ApiPropertyOptional({ description: "Assignment active status", example: true })
     @IsOptional()
-    @IsBoolean()
+    @ValidateType({ constraints: { field: "isActive", type: FieldTypeEnum.Boolean } })
     isActive?: boolean;
 }

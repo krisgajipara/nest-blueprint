@@ -1,8 +1,8 @@
-import { ValidateEnumType, ValidateNotEmpty } from "@core-custom-validators";
-import { StaffSkillLevelEnum } from "@core-enums";
+import { ValidateEnumType, ValidateNotEmpty, ValidateType } from "@core-custom-validators";
+import { FieldTypeEnum, StaffSkillLevelEnum } from "@core-enums";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
-import { IsArray, IsBoolean, IsOptional, IsUUID, ValidateNested } from "class-validator";
+import { IsArray, IsOptional, IsUUID, ValidateNested } from "class-validator";
 
 export class ServiceStaffAssignmentItemDto {
     @ApiProperty({ description: "Staff user ID" })
@@ -16,7 +16,7 @@ export class ServiceStaffAssignmentItemDto {
 
     @ApiPropertyOptional({ description: "Assignment active status", example: true, default: true })
     @IsOptional()
-    @IsBoolean()
+    @ValidateType({ constraints: { field: "isActive", type: FieldTypeEnum.Boolean } })
     isActive?: boolean;
 }
 

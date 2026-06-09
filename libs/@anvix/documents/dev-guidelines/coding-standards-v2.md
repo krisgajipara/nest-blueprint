@@ -68,6 +68,13 @@ Relative imports are acceptable for nearby implementation details inside the sam
 - Prefer custom validators from `@core-custom-validators`.
 - Do not use `class-validator` decorators directly when an existing custom validator covers the need.
 - For type checks, prefer `ValidateType()` with `FieldTypeEnum`.
+- For `@Get` + `@Query()` DTO fields, validate as incoming strings:
+  - booleans: `FieldTypeEnum.BooleanString`
+  - numbers: `FieldTypeEnum.NumberString`
+  - plain text: `FieldTypeEnum.String`
+- Do not use raw `@IsBoolean()` / `@IsNumber()` for query DTO type validation.
+- For `@Post`/`@Put`/`@Patch` body DTO fields, use native type validators (`FieldTypeEnum.Boolean`, `FieldTypeEnum.Number`) unless a field is intentionally string-encoded.
+- Query array params must normalize single and repeated values to arrays in DTO transform logic so `?x=a` and `?x=a&x=b` are handled consistently.
 - If a required validator does not exist, add it to `libs/@anvix/server-core/custom-validators`.
 - Use dedicated query DTOs with `@Query()` for list/search endpoints.
 

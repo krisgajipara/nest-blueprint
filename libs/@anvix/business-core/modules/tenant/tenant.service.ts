@@ -195,6 +195,42 @@ export class TenantService {
     }
 
     /**
+     * Seed a sample stylist user for quick booking flow testing.
+     * Uses tenant subdomain in email to keep uniqueness across tenants.
+     */
+    private async seedSampleStylist(
+        manager: EntityManager,
+        tenantId: string,
+        tenantSubdomain: string
+    ): Promise<void> {
+        const seedEmail = `john.smith+${tenantSubdomain}@yopmail.com`;
+
+        const existingStylist = await manager.findOne(User, {
+            where: {
+                email: seedEmail,
+                userType: UserTypeEnum.STYLIST
+            } as any
+        });
+        if (existingStylist) {
+            return;
+        }
+
+        const stylistUser = manager.create(User, {
+            firstName: "John",
+            lastName: "Smith",
+            email: seedEmail,
+            password: "$2b$10$qz6qDHh8GLAaupOXFhKroeCcRBlGnQBX3IX5L2pCfiRyh8Cua0FnS",
+            salt: "$2b$10$qz6qDHh8GLAaupOXFhKroe",
+            userType: UserTypeEnum.STYLIST,
+            status: UserStatus.ACTIVE,
+            experienceYears: 5,
+            tenantId
+        });
+
+        await manager.save(stylistUser);
+    }
+
+    /**
      * Resolve tenant by subdomain
      * @param subdomain - Tenant subdomain
      * @returns Promise of AppResponse with public tenant data
@@ -273,6 +309,7 @@ export class TenantService {
                 );
             }
 
+            await this.seedSampleStylist(manager, savedTenant.id, savedTenant.subdomain);
             await seedServiceCatalogForTenant(manager, savedTenant.id);
 
             const response = new TenantResponseDto(savedTenant);

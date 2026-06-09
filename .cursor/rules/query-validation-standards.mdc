@@ -1,0 +1,27 @@
+---
+description: Enforce GET query validation and transform conventions
+globs: **/*.ts
+alwaysApply: false
+---
+
+# GET Query Validation Standards
+
+- For `@Get` endpoints that use `@Query()` DTOs, treat incoming values as strings at validation time.
+- Do not use raw `@IsBoolean()` or `@IsNumber()` for query params.
+- Use `@ValidateType` + `FieldTypeEnum` instead:
+  - booleans from query -> `FieldTypeEnum.BooleanString`
+  - numbers from query -> `FieldTypeEnum.NumberString`
+  - text from query -> `FieldTypeEnum.String`
+- For body DTOs (`@Post`, `@Put`, `@Patch`) keep native types (e.g., `FieldTypeEnum.Boolean`, `FieldTypeEnum.Number`) unless payload is explicitly string-based.
+- Query array fields must normalize single and repeated values:
+  - `?ids=a` and `?ids=a&ids=b` must both become arrays before validation.
+  - Add transform logic in DTO so downstream service/repository always receives an array.
+
+Example:
+
+```typescript
+@ValidateOptional()
+@Transform(({ value }) => (Array.isArray(value) ? value : value ? [value] : []))
+@ValidateType({ constraints: { field: "ids", type: FieldTypeEnum.Array } })
+ids?: string[];
+```

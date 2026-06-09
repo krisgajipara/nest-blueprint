@@ -40,6 +40,9 @@ Use supporting references as needed:
 - business logic in controllers
 - raw entities returned from controllers
 - missing request/response DTOs
+- query DTO type mismatch (e.g., `@Get` query booleans/numbers not validated as `BooleanString` / `NumberString`)
+- raw `@IsBoolean()` / `@IsNumber()` used where project `ValidateType` should be used
+- query array fields not normalized (`?x=a` vs `?x=a&x=b`)
 - tenant-owned repository not extending `TenantAwareRepository<T>`
 - tenant-owned entity not using tenant-aware base entity
 - raw SQL without tenant filtering

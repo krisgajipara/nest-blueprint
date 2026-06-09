@@ -2,7 +2,7 @@ import { ServiceCategoryEntityConstant } from "@core-constants";
 import { ValidateEnumType, ValidateMaxLength, ValidateNotEmpty, ValidateType } from "@core-custom-validators";
 import { FieldTypeEnum, ServiceGenderEnum } from "@core-enums";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsOptional } from "class-validator";
+import { IsOptional } from "class-validator";
 
 export class CreateServiceCategoryRequestDto {
     @ApiProperty({ description: "Category name", example: "Hair", maxLength: ServiceCategoryEntityConstant.NameMaxLength })
@@ -17,6 +17,6 @@ export class CreateServiceCategoryRequestDto {
 
     @ApiPropertyOptional({ description: "Active status", example: true, default: true })
     @IsOptional()
-    @IsBoolean()
+    @ValidateType({ constraints: { field: "isActive", type: FieldTypeEnum.Boolean } })
     isActive?: boolean;
 }

@@ -2,7 +2,7 @@ import { SkillEntityConstant } from "@core-constants";
 import { ValidateMaxLength, ValidateOptional, ValidateType } from "@core-custom-validators";
 import { FieldTypeEnum } from "@core-enums";
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsOptional } from "class-validator";
+import { IsOptional } from "class-validator";
 
 export class UpdateSkillRequestDto {
     @ApiPropertyOptional({ description: "Skill name" })
@@ -19,6 +19,6 @@ export class UpdateSkillRequestDto {
 
     @ApiPropertyOptional({ description: "Active status" })
     @IsOptional()
-    @IsBoolean()
+    @ValidateType({ constraints: { field: "isActive", type: FieldTypeEnum.Boolean } })
     isActive?: boolean;
 }

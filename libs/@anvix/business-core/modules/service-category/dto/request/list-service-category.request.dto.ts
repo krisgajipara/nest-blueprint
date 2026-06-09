@@ -1,8 +1,8 @@
 import { CommonSearchRequestDto } from "@business-core-dto";
-import { ValidateEnumType, ValidateOptional } from "@core-custom-validators";
-import { ServiceGenderEnum } from "@core-enums";
+import { ValidateEnumType, ValidateOptional, ValidateType } from "@core-custom-validators";
+import { FieldTypeEnum, ServiceGenderEnum } from "@core-enums";
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsOptional, IsString } from "class-validator";
+import { IsOptional, IsString } from "class-validator";
 
 export class ListServiceCategoryRequestDto extends CommonSearchRequestDto {
     @ApiPropertyOptional({ description: "Filter by gender", enum: ServiceGenderEnum })
@@ -12,7 +12,7 @@ export class ListServiceCategoryRequestDto extends CommonSearchRequestDto {
 
     @ApiPropertyOptional({ description: "Filter by active status", example: true })
     @IsOptional()
-    @IsBoolean()
+    @ValidateType({ constraints: { field: "isActive", type: FieldTypeEnum.BooleanString } })
     isActive?: boolean;
 
     @ApiPropertyOptional({

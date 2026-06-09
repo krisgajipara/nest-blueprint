@@ -1,8 +1,9 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsBoolean } from "class-validator";
+import { ValidateType } from "@core-custom-validators";
+import { FieldTypeEnum } from "@core-enums";
 
 export class UpdateServiceCategoryStatusRequestDto {
     @ApiProperty({ description: "Active status", example: true })
-    @IsBoolean()
+    @ValidateType({ constraints: { field: "isActive", type: FieldTypeEnum.Boolean } })
     isActive: boolean;
 }

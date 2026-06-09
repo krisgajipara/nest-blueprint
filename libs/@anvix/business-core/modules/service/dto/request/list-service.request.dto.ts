@@ -1,8 +1,8 @@
 import { CommonSearchRequestDto } from "@business-core-dto";
-import { ValidateEnumType, ValidateOptional } from "@core-custom-validators";
-import { ServiceGenderEnum } from "@core-enums";
+import { ValidateEnumType, ValidateOptional, ValidateType } from "@core-custom-validators";
+import { FieldTypeEnum, ServiceGenderEnum } from "@core-enums";
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsOptional, IsString, IsUUID } from "class-validator";
+import { IsOptional, IsString, IsUUID } from "class-validator";
 
 export class ListServiceRequestDto extends CommonSearchRequestDto {
     @ApiPropertyOptional({ description: "Filter by category ID" })
@@ -17,7 +17,7 @@ export class ListServiceRequestDto extends CommonSearchRequestDto {
 
     @ApiPropertyOptional({ description: "Filter by active status", example: true })
     @IsOptional()
-    @IsBoolean()
+    @ValidateType({ constraints: { field: "isActive", type: FieldTypeEnum.BooleanString } })
     isActive?: boolean;
 
     @ApiPropertyOptional({ description: "Filter services assigned to staff user ID" })
@@ -32,7 +32,7 @@ export class ListServiceRequestDto extends CommonSearchRequestDto {
 
     @ApiPropertyOptional({ description: "Filter by staff assignment active status when staff filter is used" })
     @IsOptional()
-    @IsBoolean()
+    @ValidateType({ constraints: { field: "assignmentIsActive", type: FieldTypeEnum.BooleanString } })
     assignmentIsActive?: boolean;
 
     @ApiPropertyOptional({
@@ -41,7 +41,7 @@ export class ListServiceRequestDto extends CommonSearchRequestDto {
         default: true
     })
     @IsOptional()
-    @IsBoolean()
+    @ValidateType({ constraints: { field: "includeSkills", type: FieldTypeEnum.BooleanString } })
     includeSkills?: boolean;
 
     @ApiPropertyOptional({
@@ -50,7 +50,7 @@ export class ListServiceRequestDto extends CommonSearchRequestDto {
         default: true
     })
     @IsOptional()
-    @IsBoolean()
+    @ValidateType({ constraints: { field: "includeAssignedStaff", type: FieldTypeEnum.BooleanString } })
     includeAssignedStaff?: boolean;
 
     @ApiPropertyOptional({

@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsOptional, IsString } from "class-validator";
 import { CommonSearchRequestDto } from "@business-core-dto";
+import { ValidateOptional, ValidateType } from "@core-custom-validators";
+import { FieldTypeEnum } from "@core-enums";
 
 /**
  * DTO for listing roles with search, filter, pagination, and sorting
@@ -11,7 +12,7 @@ export class ListRoleRequestDto extends CommonSearchRequestDto {
         example: "name",
         enum: ["name", "description", "createdAt", "updatedAt"]
     })
-    @IsOptional()
-    @IsString()
+    @ValidateOptional()
+    @ValidateType({ constraints: { field: "sort by", type: FieldTypeEnum.String } })
     sortBy?: string;
 }

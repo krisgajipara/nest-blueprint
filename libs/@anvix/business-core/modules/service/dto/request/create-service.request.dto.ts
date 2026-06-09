@@ -7,7 +7,7 @@ import {
 } from "@core-custom-validators";
 import { FieldTypeEnum } from "@core-enums";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsOptional, IsUUID } from "class-validator";
+import { IsOptional, IsUUID } from "class-validator";
 
 export class CreateServiceRequestDto {
     @ApiProperty({ description: "Service category ID" })
@@ -41,6 +41,6 @@ export class CreateServiceRequestDto {
 
     @ApiPropertyOptional({ description: "Active status", example: true, default: true })
     @IsOptional()
-    @IsBoolean()
+    @ValidateType({ constraints: { field: "isActive", type: FieldTypeEnum.Boolean } })
     isActive?: boolean;
 }

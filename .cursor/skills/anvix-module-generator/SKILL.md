@@ -66,6 +66,9 @@ When generating module work:
 - Use request/response DTO split under `dto/request` and `dto/response`.
 - Prefer custom validators from `@core-custom-validators`.
 - Use `ValidateType` + `FieldTypeEnum` for field type validation where applicable.
+- For `@Get` + `@Query()` DTO fields, validate incoming values as strings (`BooleanString`, `NumberString`, `String`).
+- Do not use raw `@IsBoolean()` / `@IsNumber()` in query DTOs.
+- Normalize query arrays so both single and repeated params become arrays before validation.
 - Avoid raw `class-validator` usage where project custom validators are standard.
 - Map responses via response DTO constructors in services.
 - Do not return raw entities from controllers.
